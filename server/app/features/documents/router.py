@@ -13,6 +13,7 @@ from app.core.models.user import User
 from app.features.documents.service import DocumentService
 from app.features.documents.schemas import (
     DocumentUploadRequest,
+    DocumentUpdateRequest,
     DocumentUploadResponse,
     DocumentResponse,
     DocumentListResponse,
@@ -20,7 +21,9 @@ from app.features.documents.schemas import (
     PresignedUploadResponse,
     DownloadUrlResponse,
     DocumentStatusResponse,
-    DocumentDeleteResponse
+    DocumentDeleteResponse,
+    BulkDeleteRequest,
+    BulkDeleteResponse
 )
 
 logger = logging.getLogger(__name__)
@@ -238,6 +241,74 @@ async def get_download_url(
     except Exception as e:
         logger.error(f"Unexpected error generating download URL: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.patch("/{document_id}", response_model=DocumentResponse)
+async def update_document(
+    document_id: uuid.UUID,
+    request: DocumentUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Update document metadata.
+    
+    - **document_id**: UUID of the document
+    - **name**: New display name for the document (optional)
+    - **folder_id**: New folder ID or null to move to root (optional)
+    
+    Updates the document's metadata while preserving file content and processing status.
+    """
+    try:
+        service = DocumentService(db)
+        document = await service.update_document(
+            user_id=current_user.id,
+            document_id=document_id,
+            name=request.name,
+            folder_id=request.folder_id
+        )
+        
+        return document
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error updating document: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.delete("/bulk", response_model=BulkDeleteResponse)
+async def bulk_delete_documents(
+    request: BulkDeleteRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Delete multiple documents and all associated data.
+    
+    - **document_ids**: List of document UUIDs to delete (max 50)
+    
+    This will remove all specified documents from storage, database, and vector store.
+    The operation cannot be undone. Returns summary of successful and failed deletions.
+    """
+    try:
+        service = DocumentService(db)
+        deleted_count, failed_count, failed_document_ids = await service.bulk_delete_documents(
+            user_id=current_user.id,
+            document_ids=request.document_ids
+        )
+        
+        return BulkDeleteResponse(
+            deleted_count=deleted_count,
+            failed_count=failed_count,
+            failed_documents=failed_document_ids
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error during bulk deletion: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error during bulk deletion")
 
 
 @router.delete("/{document_id}", response_model=DocumentDeleteResponse)

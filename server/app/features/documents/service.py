@@ -463,6 +463,63 @@ class DocumentService:
             filename=document.original_name
         )
     
+    async def update_document(
+        self, 
+        user_id: uuid.UUID, 
+        document_id: uuid.UUID,
+        name: Optional[str] = None,
+        folder_id: Optional[uuid.UUID] = None
+    ) -> DocumentResponse:
+        """
+        Update document metadata.
+        
+        Args:
+            user_id: User ID
+            document_id: Document ID
+            name: New display name (optional)
+            folder_id: New folder ID (optional, None to move to root)
+            
+        Returns:
+            Updated document response
+            
+        Raises:
+            HTTPException: If document not found or access denied
+        """
+        stmt = select(Document).where(
+            and_(Document.id == document_id, Document.user_id == user_id)
+        )
+        result = await self.db.execute(stmt)
+        document = result.scalar_one_or_none()
+        
+        if not document:
+            raise HTTPException(
+                status_code=404,
+                detail="Document not found or access denied"
+            )
+        
+        # Validate folder access if folder_id is provided
+        if folder_id is not None:
+            await self.validate_folder_access(user_id, folder_id)
+        
+        # Update fields if provided
+        if name is not None:
+            if not name.strip():
+                raise HTTPException(
+                    status_code=400,
+                    detail="Document name cannot be empty"
+                )
+            document.name = name.strip()
+        
+        if folder_id is not None:
+            document.folder_id = folder_id
+        
+        await self.db.commit()
+        await self.db.refresh(document)
+        
+        logger.info(f"Document updated successfully: {document_id}")
+        
+        return DocumentResponse.model_validate(document)
+    
     async def delete_document(self, user_id: uuid.UUID, document_id: uuid.UUID) -> bool:
         """
         Delete document and associated data.
@@ -508,4 +565,44 @@ class DocumentService:
             logger.error(f"Failed to queue cleanup task for document {document_id}: {str(e)}")
             # Don't fail the deletion if cleanup task queueing fails
         
-        return True
+    async def bulk_delete_documents(
+        self, 
+        user_id: uuid.UUID, 
+        document_ids: list[uuid.UUID]
+    ) -> tuple[int, int, list[uuid.UUID]]:
+        """
+        Delete multiple documents and associated data.
+        
+        Args:
+            user_id: User ID
+            document_ids: List of document IDs to delete
+            
+        Returns:
+            Tuple of (deleted_count, failed_count, failed_document_ids)
+        """
+        deleted_count = 0
+        failed_count = 0
+        failed_document_ids = []
+        
+        for document_id in document_ids:
+            try:
+                success = await self.delete_document(user_id, document_id)
+                if success:
+                    deleted_count += 1
+                else:
+                    failed_count += 1
+                    failed_document_ids.append(document_id)
+            except HTTPException as e:
+                # Document not found or access denied
+                failed_count += 1
+                failed_document_ids.append(document_id)
+                logger.warning(f"Failed to delete document {document_id}: {e.detail}")
+            except Exception as e:
+                # Unexpected error
+                failed_count += 1
+                failed_document_ids.append(document_id)
+                logger.error(f"Unexpected error deleting document {document_id}: {str(e)}")
+        
+        logger.info(f"Bulk deletion completed: {deleted_count} deleted, {failed_count} failed")
+        
+        return deleted_count, failed_count, failed_document_ids

@@ -9,6 +9,25 @@ from pydantic import BaseModel, Field, field_validator, computed_field
 from app.core.config import settings
 
 
+class DocumentUpdateRequest(BaseModel):
+    """Schema for document update request."""
+    
+    name: Optional[str] = Field(None, description="New display name for the document")
+    folder_id: Optional[uuid.UUID] = Field(None, description="New folder ID (null to move to root)")
+    
+    @field_validator('name')
+    @classmethod
+    def validate_name(cls, v):
+        if v is not None and not v.strip():
+            raise ValueError("Document name cannot be empty")
+        return v.strip() if v else v
+    
+    class Config:
+        json_encoders = {
+            uuid.UUID: str
+        }
+
+
 class DocumentUploadRequest(BaseModel):
     """Schema for document upload request."""
     
@@ -149,6 +168,31 @@ class DownloadUrlResponse(BaseModel):
     download_url: str = Field(..., description="Presigned download URL")
     expires_in: int = Field(..., description="URL expiration time in seconds")
     filename: str = Field(..., description="Original filename")
+    
+    class Config:
+        json_encoders = {
+            uuid.UUID: str
+        }
+
+
+class BulkDeleteRequest(BaseModel):
+    """Schema for bulk document deletion request."""
+    
+    document_ids: list[uuid.UUID] = Field(..., description="List of document IDs to delete", min_length=1, max_length=50)
+    
+    class Config:
+        json_encoders = {
+            uuid.UUID: str
+        }
+
+
+class BulkDeleteResponse(BaseModel):
+    """Schema for bulk document deletion response."""
+    
+    message: str = "Bulk deletion completed"
+    deleted_count: int = Field(..., description="Number of documents successfully deleted")
+    failed_count: int = Field(..., description="Number of documents that failed to delete")
+    failed_documents: list[uuid.UUID] = Field(default_factory=list, description="IDs of documents that failed to delete")
     
     class Config:
         json_encoders = {
