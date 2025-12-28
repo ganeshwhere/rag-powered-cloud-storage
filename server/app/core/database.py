@@ -4,8 +4,8 @@ Provides database session management and connection handling.
 """
 from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy import MetaData
+from sqlalchemy.orm import DeclarativeBase, sessionmaker, Session
+from sqlalchemy import MetaData, create_engine
 
 from app.core.config import settings
 
@@ -18,7 +18,7 @@ def get_async_database_url(sync_url: str) -> str:
     return sync_url
 
 
-# Database engine
+# Async database engine
 engine = create_async_engine(
     get_async_database_url(settings.database_url),
     echo=settings.debug,
@@ -27,10 +27,25 @@ engine = create_async_engine(
     pool_recycle=300,
 )
 
-# Session factory
+# Sync database engine for Celery tasks
+sync_engine = create_engine(
+    settings.database_url,
+    echo=settings.debug,
+    pool_pre_ping=True,
+    pool_recycle=300,
+)
+
+# Async session factory
 AsyncSessionLocal = async_sessionmaker(
     engine,
     class_=AsyncSession,
+    expire_on_commit=False,
+)
+
+# Sync session factory for Celery tasks
+SessionLocal = sessionmaker(
+    sync_engine,
+    class_=Session,
     expire_on_commit=False,
 )
 
@@ -73,6 +88,18 @@ async def init_db() -> None:
     
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+
+# Sync database initialization for Celery
+def init_db_sync() -> None:
+    """Initialize database tables synchronously."""
+    # Import all models to ensure they are registered
+    from app.core.models.user import User  # noqa
+    from app.core.models.document import Document, DocumentChunk  # noqa
+    from app.core.models.folder import Folder  # noqa
+    from app.core.models.search import SearchHistory  # noqa
+    
+    Base.metadata.create_all(sync_engine)
 
 
 # Database cleanup

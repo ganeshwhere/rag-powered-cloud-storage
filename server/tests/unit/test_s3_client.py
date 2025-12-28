@@ -57,6 +57,7 @@ class TestS3Client:
         expected = "users/user-123/documents/doc-456/test_file_with_spaces.txt"
         assert result == expected
     
+    @pytest.mark.asyncio
     async def test_upload_file_success(self, s3_client, mock_boto3_client):
         """Test successful file upload."""
         file_obj = io.BytesIO(b"test content")
@@ -81,6 +82,7 @@ class TestS3Client:
         assert extra_args['ContentType'] == content_type
         assert 'Metadata' in extra_args
     
+    @pytest.mark.asyncio
     async def test_upload_file_client_error(self, s3_client, mock_boto3_client):
         """Test file upload with client error."""
         file_obj = io.BytesIO(b"test content")
@@ -95,6 +97,7 @@ class TestS3Client:
         
         assert result is False
     
+    @pytest.mark.asyncio
     async def test_download_file_success(self, s3_client, mock_boto3_client):
         """Test successful file download."""
         s3_key = "test/key.txt"
@@ -115,6 +118,7 @@ class TestS3Client:
             Key=s3_key
         )
     
+    @pytest.mark.asyncio
     async def test_download_file_not_found(self, s3_client, mock_boto3_client):
         """Test file download when file not found."""
         s3_key = "test/nonexistent.txt"
@@ -128,6 +132,7 @@ class TestS3Client:
         
         assert result is None
     
+    @pytest.mark.asyncio
     async def test_delete_file_success(self, s3_client, mock_boto3_client):
         """Test successful file deletion."""
         s3_key = "test/key.txt"
@@ -142,6 +147,7 @@ class TestS3Client:
             Key=s3_key
         )
     
+    @pytest.mark.asyncio
     async def test_delete_file_error(self, s3_client, mock_boto3_client):
         """Test file deletion with error."""
         s3_key = "test/key.txt"
@@ -155,6 +161,7 @@ class TestS3Client:
         
         assert result is False
     
+    @pytest.mark.asyncio
     async def test_generate_presigned_upload_url_success(self, s3_client, mock_boto3_client):
         """Test successful presigned upload URL generation."""
         s3_key = "test/key.txt"
@@ -183,6 +190,7 @@ class TestS3Client:
         assert call_args[1]['Key'] == s3_key
         assert call_args[1]['Fields']['Content-Type'] == content_type
     
+    @pytest.mark.asyncio
     async def test_generate_presigned_upload_url_error(self, s3_client, mock_boto3_client):
         """Test presigned upload URL generation with error."""
         s3_key = "test/key.txt"
@@ -196,6 +204,7 @@ class TestS3Client:
         
         assert result is None
     
+    @pytest.mark.asyncio
     async def test_generate_presigned_download_url_success(self, s3_client, mock_boto3_client):
         """Test successful presigned download URL generation."""
         s3_key = "test/key.txt"
@@ -215,6 +224,7 @@ class TestS3Client:
             ExpiresIn=3600
         )
     
+    @pytest.mark.asyncio
     async def test_generate_presigned_download_url_error(self, s3_client, mock_boto3_client):
         """Test presigned download URL generation with error."""
         s3_key = "test/key.txt"
@@ -228,6 +238,7 @@ class TestS3Client:
         
         assert result is None
     
+    @pytest.mark.asyncio
     async def test_file_exists_true(self, s3_client, mock_boto3_client):
         """Test file existence check when file exists."""
         s3_key = "test/key.txt"
@@ -245,6 +256,7 @@ class TestS3Client:
             Key=s3_key
         )
     
+    @pytest.mark.asyncio
     async def test_file_exists_false(self, s3_client, mock_boto3_client):
         """Test file existence check when file doesn't exist."""
         s3_key = "test/nonexistent.txt"
@@ -258,6 +270,7 @@ class TestS3Client:
         
         assert result is False
     
+    @pytest.mark.asyncio
     async def test_get_file_metadata_success(self, s3_client, mock_boto3_client):
         """Test successful file metadata retrieval."""
         s3_key = "test/key.txt"
@@ -279,6 +292,7 @@ class TestS3Client:
         assert result['etag'] == '"abc123"'
         assert result['metadata']['custom'] == 'value'
     
+    @pytest.mark.asyncio
     async def test_get_file_metadata_not_found(self, s3_client, mock_boto3_client):
         """Test file metadata retrieval when file not found."""
         s3_key = "test/nonexistent.txt"

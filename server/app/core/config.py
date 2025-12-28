@@ -74,6 +74,16 @@ class Settings(BaseSettings):
     celery_task_retry_max: int = Field(default=3, description="Maximum task retry attempts")
     celery_task_retry_delay: int = Field(default=60, description="Task retry delay in seconds")
     
+    @property
+    def CELERY_BROKER_URL(self) -> str:
+        """Get Celery broker URL, defaulting to Redis URL."""
+        return self.celery_broker_url or self.redis_url
+    
+    @property
+    def CELERY_RESULT_BACKEND(self) -> str:
+        """Get Celery result backend URL, defaulting to Redis URL."""
+        return self.celery_result_backend or self.redis_url
+    
     # Cache
     cache_ttl_seconds: int = Field(default=3600, description="Default cache TTL in seconds")
     search_cache_ttl_seconds: int = Field(default=1800, description="Search result cache TTL in seconds")

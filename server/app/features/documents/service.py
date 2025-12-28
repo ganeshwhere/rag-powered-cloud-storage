@@ -19,6 +19,7 @@ from app.features.documents.schemas import (
     DownloadUrlResponse,
     DocumentStatusResponse
 )
+from app.workers.tasks import process_document_task, cleanup_document_task
 
 logger = logging.getLogger(__name__)
 
@@ -181,8 +182,13 @@ class DocumentService:
         
         logger.info(f"Document uploaded successfully: {document.id}")
         
-        # TODO: Trigger background processing task
-        # This will be implemented in task 5 (Background Processing with Celery)
+        # Trigger background processing task
+        try:
+            process_document_task.delay(str(document.id))
+            logger.info(f"Queued processing task for document: {document.id}")
+        except Exception as e:
+            logger.error(f"Failed to queue processing task for document {document.id}: {str(e)}")
+            # Don't fail the upload if task queueing fails
         
         return DocumentResponse.model_validate(document)
     
@@ -268,6 +274,49 @@ class DocumentService:
             fields=presigned_data['fields'],
             expires_in=3600  # 1 hour
         )
+    
+    async def confirm_presigned_upload(
+        self,
+        user_id: uuid.UUID,
+        document_id: uuid.UUID,
+        file_size: int
+    ) -> DocumentResponse:
+        """
+        Confirm presigned upload completion and trigger processing.
+        
+        Args:
+            user_id: User ID
+            document_id: Document ID
+            file_size: Actual file size after upload
+            
+        Returns:
+            Document response
+        """
+        stmt = select(Document).where(
+            and_(Document.id == document_id, Document.user_id == user_id)
+        )
+        result = await self.db.execute(stmt)
+        document = result.scalar_one_or_none()
+        
+        if not document:
+            raise HTTPException(
+                status_code=404,
+                detail="Document not found or access denied"
+            )
+        
+        # Update file size
+        document.file_size = file_size
+        await self.db.commit()
+        await self.db.refresh(document)
+        
+        # Trigger background processing task
+        try:
+            process_document_task.delay(str(document.id))
+            logger.info(f"Queued processing task for presigned upload: {document.id}")
+        except Exception as e:
+            logger.error(f"Failed to queue processing task for document {document.id}: {str(e)}")
+        
+        return DocumentResponse.model_validate(document)
     
     async def get_user_documents(
         self,
@@ -451,7 +500,12 @@ class DocumentService:
         
         logger.info(f"Document deleted successfully: {document_id}")
         
-        # TODO: Delete from vector store (Pinecone)
-        # This will be implemented in task 5 (Background Processing with Celery)
+        # Trigger cleanup task for vector store
+        try:
+            cleanup_document_task.delay(str(document_id))
+            logger.info(f"Queued cleanup task for document: {document_id}")
+        except Exception as e:
+            logger.error(f"Failed to queue cleanup task for document {document_id}: {str(e)}")
+            # Don't fail the deletion if cleanup task queueing fails
         
         return True
