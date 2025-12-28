@@ -14,9 +14,25 @@ async def lifespan(app: FastAPI):
     """Application lifespan manager."""
     # Startup
     await init_db()
+    
+    # Initialize Redis client
+    from app.core.redis_client import redis_client
+    try:
+        await redis_client.connect()
+    except Exception as e:
+        print(f"Warning: Redis connection failed: {e}")
+        print("Search caching will be disabled")
+    
     yield
+    
     # Shutdown
     await close_db()
+    
+    # Disconnect Redis
+    try:
+        await redis_client.disconnect()
+    except Exception:
+        pass
 
 
 # Create FastAPI application
@@ -64,9 +80,9 @@ async def root():
 from app.features.auth.router import router as auth_router
 from app.features.documents.router import router as documents_router
 from app.features.folders.router import router as folders_router
-# from app.features.search.router import router as search_router
+from app.features.search.router import router as search_router
 
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["authentication"])
 app.include_router(documents_router, tags=["documents"])
 app.include_router(folders_router, prefix="/api/v1/folders", tags=["folders"])
-# app.include_router(search_router, prefix="/api/v1/search", tags=["search"])
+app.include_router(search_router, prefix="/api/v1/search", tags=["search"])
