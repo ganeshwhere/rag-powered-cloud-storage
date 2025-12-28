@@ -10,7 +10,7 @@ import tiktoken
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from unstructured.partition.auto import partition
 try:
     from unstructured.partition.pdf import partition_pdf

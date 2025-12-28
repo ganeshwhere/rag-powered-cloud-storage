@@ -66,7 +66,12 @@ async def register(
         expires_in=settings.access_token_expire_minutes * 60
     )
     
-    return UserRegistrationResponse(user=user_response, tokens=token_response)
+    return UserRegistrationResponse(
+        user=user_response,
+        access_token=tokens["access_token"],
+        refresh_token=tokens["refresh_token"],
+        token_type=tokens["token_type"]
+    )
 
 
 @router.post(
@@ -108,7 +113,12 @@ async def login(
         expires_in=settings.access_token_expire_minutes * 60
     )
     
-    return UserLoginResponse(user=user_response, tokens=token_response)
+    return UserLoginResponse(
+        user=user_response,
+        access_token=tokens["access_token"],
+        refresh_token=tokens["refresh_token"],
+        token_type=tokens["token_type"]
+    )
 
 
 @router.post(

@@ -52,17 +52,21 @@ class UserResponse(BaseModel):
 
 
 class UserRegistrationResponse(BaseModel):
-    """Schema for user registration response."""
+    """Schema for user registration response - flattened format."""
     
     user: UserResponse = Field(..., description="Created user information")
-    tokens: TokenResponse = Field(..., description="Authentication tokens")
+    access_token: str = Field(..., description="JWT access token")
+    refresh_token: str = Field(..., description="JWT refresh token")
+    token_type: str = Field(default="bearer", description="Token type")
 
 
 class UserLoginResponse(BaseModel):
-    """Schema for user login response."""
+    """Schema for user login response - flattened format."""
     
     user: UserResponse = Field(..., description="User information")
-    tokens: TokenResponse = Field(..., description="Authentication tokens")
+    access_token: str = Field(..., description="JWT access token")
+    refresh_token: str = Field(..., description="JWT refresh token")
+    token_type: str = Field(default="bearer", description="Token type")
 
 
 class MessageResponse(BaseModel):

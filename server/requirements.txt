@@ -25,6 +25,7 @@ unstructured>=0.10.0
 pdfminer.six>=20221105
 pillow-heif>=1.1.0
 langchain>=0.1.0
+langchain-text-splitters>=0.0.1
 tiktoken>=0.5.0
 
 # AI/ML Services
@@ -34,6 +35,7 @@ pinecone>=5.0.0
 # Data Validation and Configuration
 pydantic>=2.5.0
 pydantic-settings>=2.1.0
+email-validator>=2.0.0
 
 # HTTP Client
 httpx>=0.25.0
