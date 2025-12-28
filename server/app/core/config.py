@@ -3,7 +3,7 @@ Application configuration using Pydantic Settings.
 Supports environment variable configuration for all system parameters.
 """
 from typing import Optional
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -60,6 +60,13 @@ class Settings(BaseSettings):
         default=["pdf", "docx", "txt", "csv", "xlsx", "md"],
         description="Supported file types for upload"
     )
+    
+    @field_validator('supported_file_types', mode='before')
+    @classmethod
+    def parse_supported_file_types(cls, v):
+        if isinstance(v, str):
+            return [item.strip() for item in v.split(',')]
+        return v
     
     # Celery
     celery_broker_url: Optional[str] = Field(default=None, description="Celery broker URL (defaults to redis_url)")
