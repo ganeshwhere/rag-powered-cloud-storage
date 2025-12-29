@@ -3,10 +3,10 @@ Document upload and management service.
 """
 import uuid
 import logging
-from typing import Optional, BinaryIO, Tuple
+from typing import Optional, Tuple
 from fastapi import HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import and_, desc, select
+from sqlalchemy import and_, desc, select, func
 
 from app.core.models.document import Document
 from app.core.models.folder import Folder
@@ -176,9 +176,18 @@ class DocumentService:
             status="pending"
         )
         
-        self.db.add(document)
-        await self.db.commit()
-        await self.db.refresh(document)
+        try:
+            self.db.add(document)
+            await self.db.commit()
+            await self.db.refresh(document)
+        except Exception as e:
+            # If database operation fails, clean up the uploaded file
+            logger.error(f"Database operation failed after S3 upload: {str(e)}")
+            await s3_client.delete_file(s3_key)
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to create document record"
+            )
         
         logger.info(f"Document uploaded successfully: {document.id}")
         
@@ -344,12 +353,12 @@ class DocumentService:
             stmt = stmt.where(Document.folder_id == folder_id)
         
         # Get total count
-        count_stmt = select(Document).where(Document.user_id == user_id)
+        count_stmt = select(func.count(Document.id)).where(Document.user_id == user_id)
         if folder_id is not None:
             count_stmt = count_stmt.where(Document.folder_id == folder_id)
         
         count_result = await self.db.execute(count_stmt)
-        total = len(count_result.scalars().all())
+        total = count_result.scalar()
         
         # Apply pagination and ordering
         stmt = stmt.order_by(desc(Document.created_at)).offset(
@@ -564,6 +573,8 @@ class DocumentService:
         except Exception as e:
             logger.error(f"Failed to queue cleanup task for document {document_id}: {str(e)}")
             # Don't fail the deletion if cleanup task queueing fails
+        
+        return True  # Return True to indicate successful deletion
         
     async def bulk_delete_documents(
         self, 
