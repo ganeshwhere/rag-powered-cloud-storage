@@ -4,6 +4,7 @@ Search service for RAG-based document search and answer generation.
 import logging
 import time
 import uuid
+import asyncio
 from typing import List, Optional, Dict, Any, Tuple, Union
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
@@ -32,10 +33,18 @@ class SearchService:
         if not settings.openai_api_key:
             raise ValueError("OpenAI API key is required for search functionality")
         
-        self.openai_client = AsyncOpenAI(api_key=settings.openai_api_key)
+        self.openai_client = AsyncOpenAI(
+            api_key=settings.openai_api_key,
+            max_retries=2,  # Reduce retries for faster failures
+            timeout=30.0    # Overall timeout for OpenAI requests
+        )
         self.vector_store = PineconeClient()
         self.embedding_model = settings.embedding_model
         self.llm_model = settings.openai_model
+        
+        # Cache for common embeddings to avoid repeated API calls
+        self._embedding_cache = {}
+        self._cache_max_size = 100
     
     async def search_documents(
         self, 
@@ -44,7 +53,7 @@ class SearchService:
         db: AsyncSession
     ) -> Union[SearchResponse, NoResultsResponse]:
         """
-        Perform RAG-based search on user documents with caching.
+        Perform RAG-based search on user documents with caching and performance optimizations.
         
         Args:
             request: Search request parameters
@@ -57,77 +66,78 @@ class SearchService:
         start_time = time.time()
         
         try:
-            # Check cache first
+            # Check cache first (with faster key generation)
+            cache_key = self._generate_fast_cache_key(user_id, request)
             try:
-                cached_result = await redis_client.get_cached_search_results(
-                    user_id=user_id,
-                    query=request.query,
-                    document_ids=request.document_ids,
-                    top_k=request.top_k,
-                    min_score=request.min_score
-                )
+                cached_result = await redis_client.get(cache_key)
+                if cached_result:
+                    logger.info(f"Returning cached search results for user {user_id}")
+                    # Update processing time for cached result
+                    cached_result["processing_time_ms"] = int((time.time() - start_time) * 1000)
+                    
+                    # Record search in history (async, don't wait)
+                    asyncio.create_task(self._record_search_history(
+                        db=db,
+                        user_id=user_id,
+                        query=request.query,
+                        results_count=cached_result.get("total_results", 0)
+                    ))
+                    
+                    return SearchResponse(**cached_result)
             except Exception as e:
                 logger.warning(f"Cache retrieval failed: {str(e)}")
-                cached_result = None
             
-            if cached_result:
-                logger.info(f"Returning cached search results for user {user_id}")
-                # Update processing time for cached result
-                cached_result["processing_time_ms"] = int((time.time() - start_time) * 1000)
-                
-                # Record search in history (even for cached results)
-                await self._record_search_history(
-                    db=db,
-                    user_id=user_id,
-                    query=request.query,
-                    results_count=cached_result.get("total_results", 0)
+            # Optimize query preprocessing
+            processed_query = self._preprocess_query(request.query)
+            
+            # Generate query embedding with timeout
+            embedding_task = asyncio.create_task(
+                asyncio.wait_for(
+                    self._generate_query_embedding(processed_query), 
+                    timeout=10.0  # 10 second timeout
                 )
-                
-                return SearchResponse(**cached_result)
+            )
             
-            # Generate query embedding
-            query_embedding = await self._generate_query_embedding(request.query)
+            try:
+                query_embedding = await embedding_task
+            except asyncio.TimeoutError:
+                logger.error("Query embedding generation timed out")
+                raise Exception("Search request timed out. Please try again.")
             
-            # Search for similar chunks
-            similar_chunks = await self.vector_store.query_similar(
+            # Search for similar chunks with optimized parameters
+            similar_chunks = await self.vector_store.query_similar_optimized(
                 query_embedding=query_embedding,
                 user_id=user_id,
-                top_k=request.top_k,
+                top_k=min(request.top_k, 20),  # Limit to max 20 for performance
                 document_ids=request.document_ids,
-                min_score=request.min_score
+                min_score=max(request.min_score, 0.3)  # Minimum threshold for relevance
             )
             
             if not similar_chunks:
-                # Record search in history with 0 results
-                await self._record_search_history(
+                # Record search in history (async, don't wait)
+                asyncio.create_task(self._record_search_history(
                     db=db,
                     user_id=user_id,
                     query=request.query,
                     results_count=0
-                )
+                ))
                 
                 no_results_response = NoResultsResponse(
                     query=request.query,
                     message="No relevant documents found for your query.",
-                    suggestions=await self._generate_search_suggestions(request.query)
+                    suggestions=self._generate_fast_suggestions(request.query)
                 )
                 
-                # Cache no results response
-                try:
-                    await redis_client.cache_search_results(
-                        user_id=user_id,
-                        query=request.query,
-                        results=no_results_response.model_dump(),
-                        document_ids=request.document_ids,
-                        top_k=request.top_k,
-                        min_score=request.min_score
-                    )
-                except Exception as e:
-                    logger.warning(f"Cache storage failed: {str(e)}")
+                # Cache no results response (async, don't wait)
+                asyncio.create_task(redis_client.set_with_expiry(
+                    cache_key, 
+                    no_results_response.model_dump(), 
+                    300  # 5 minutes for no results
+                ))
                 
                 return no_results_response
             
-            # Convert to SearchChunk objects
+            # Convert to SearchChunk objects (optimized)
             search_chunks = [
                 SearchChunk(
                     id=chunk["id"],
@@ -135,13 +145,24 @@ class SearchService:
                     chunk_index=chunk["chunk_index"],
                     text=chunk["text"],
                     score=chunk["score"],
-                    metadata=chunk["metadata"]
+                    metadata=chunk.get("metadata", {})
                 )
                 for chunk in similar_chunks
             ]
             
-            # Generate answer using retrieved chunks
-            answer = await self._generate_answer(request.query, similar_chunks)
+            # Generate answer with timeout and optimization
+            answer_task = asyncio.create_task(
+                asyncio.wait_for(
+                    self._generate_answer_optimized(processed_query, similar_chunks[:5]),  # Use top 5 only
+                    timeout=15.0  # 15 second timeout
+                )
+            )
+            
+            try:
+                answer = await answer_task
+            except asyncio.TimeoutError:
+                logger.warning("Answer generation timed out, using fallback")
+                answer = self._create_fallback_summary(similar_chunks[:3])
             
             # Get unique source document IDs
             sources = list(set(chunk["document_id"] for chunk in similar_chunks))
@@ -159,26 +180,20 @@ class SearchService:
                 sources=sources
             )
             
-            # Cache the results
-            try:
-                await redis_client.cache_search_results(
-                    user_id=user_id,
-                    query=request.query,
-                    results=response.model_dump(),
-                    document_ids=request.document_ids,
-                    top_k=request.top_k,
-                    min_score=request.min_score
-                )
-            except Exception as e:
-                logger.warning(f"Cache storage failed: {str(e)}")
+            # Cache the results (async, don't wait)
+            asyncio.create_task(redis_client.set_with_expiry(
+                cache_key, 
+                response.model_dump(), 
+                settings.search_cache_ttl_seconds
+            ))
             
-            # Record search in history
-            await self._record_search_history(
+            # Record search in history (async, don't wait)
+            asyncio.create_task(self._record_search_history(
                 db=db,
                 user_id=user_id,
                 query=request.query,
                 results_count=len(similar_chunks)
-            )
+            ))
             
             return response
             
@@ -188,7 +203,7 @@ class SearchService:
     
     async def _generate_query_embedding(self, query: str) -> List[float]:
         """
-        Generate embedding for search query.
+        Generate embedding for search query with caching.
         
         Args:
             query: Search query text
@@ -196,12 +211,24 @@ class SearchService:
         Returns:
             Query embedding vector
         """
+        # Check cache first for common queries
+        query_key = query.lower().strip()
+        if query_key in self._embedding_cache:
+            logger.debug(f"Using cached embedding for query: {query_key[:50]}...")
+            return self._embedding_cache[query_key]
+        
         try:
             response = await self.openai_client.embeddings.create(
                 model=self.embedding_model,
                 input=query
             )
-            return response.data[0].embedding
+            embedding = response.data[0].embedding
+            
+            # Cache the embedding if cache isn't full
+            if len(self._embedding_cache) < self._cache_max_size:
+                self._embedding_cache[query_key] = embedding
+            
+            return embedding
             
         except Exception as e:
             logger.error(f"Error generating query embedding: {str(e)}")
@@ -467,3 +494,102 @@ Please review the detailed source chunks below for complete information."""
         except Exception as e:
             logger.error(f"Error invalidating search cache for user {user_id}: {str(e)}")
             return False
+    
+    def _generate_fast_cache_key(self, user_id: str, request: SearchRequest) -> str:
+        """Generate a fast cache key without complex hashing."""
+        query_hash = hash(request.query.lower().strip()) % 1000000
+        doc_hash = hash(str(sorted(request.document_ids or []))) % 1000 if request.document_ids else 0
+        return f"search:{user_id}:{query_hash}:{doc_hash}:{request.top_k}:{int(request.min_score*100)}"
+    
+    def _preprocess_query(self, query: str) -> str:
+        """Preprocess query for better performance and results."""
+        # Basic preprocessing - can be enhanced
+        processed = query.strip().lower()
+        
+        # Remove extra whitespace
+        processed = ' '.join(processed.split())
+        
+        # Remove common stop words that don't add value (only for longer queries)
+        stop_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were'}
+        words = processed.split()
+        if len(words) > 4:  # Only remove stop words for longer queries
+            words = [w for w in words if w not in stop_words or len(w) > 3]  # Keep longer stop words
+            processed = ' '.join(words)
+        
+        return processed
+    
+    def clear_embedding_cache(self) -> int:
+        """Clear the embedding cache and return number of items cleared."""
+        count = len(self._embedding_cache)
+        self._embedding_cache.clear()
+        logger.info(f"Cleared {count} cached embeddings")
+        return count
+    
+    def _generate_fast_suggestions(self, query: str) -> List[str]:
+        """Generate fast suggestions without complex processing."""
+        words = query.split()
+        suggestions = []
+        
+        # Suggest shorter versions
+        if len(words) > 2:
+            suggestions.append(" ".join(words[:2]))
+        
+        # Suggest individual keywords
+        if len(words) > 1:
+            suggestions.extend(words[:2])
+        
+        # Add generic suggestions
+        suggestions.extend(["summary", "overview", "key points"])
+        
+        return suggestions[:5]
+    
+    async def _generate_answer_optimized(self, query: str, chunks: List[Dict[str, Any]]) -> str:
+        """
+        Generate answer with optimized parameters for speed.
+        
+        Args:
+            query: Original search query
+            chunks: Retrieved document chunks (limited to top 5)
+            
+        Returns:
+            Generated answer text
+        """
+        try:
+            # Build concise context from chunks
+            context_parts = []
+            
+            for i, chunk in enumerate(chunks[:3]):  # Use only top 3 chunks for speed
+                doc_id = chunk.get('document_id', 'Unknown')
+                text = chunk['text'][:500]  # Limit text length for speed
+                context_parts.append(f"[Source {i+1}]: {text}")
+            
+            context = "\n\n".join(context_parts)
+            
+            # Optimized system prompt for speed
+            system_prompt = """You are a helpful assistant. Provide a concise, accurate answer based on the given context. Always cite sources using [Source X] notation."""
+            
+            user_prompt = f"""Question: {query}
+            
+Context:
+{context}
+
+Provide a brief, accurate answer with source citations."""
+            
+            # Generate answer with optimized parameters for speed
+            response = await self.openai_client.chat.completions.create(
+                model=self.llm_model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                temperature=0.0,  # Deterministic for caching
+                max_tokens=400,   # Reduced for speed
+                presence_penalty=0.0,
+                frequency_penalty=0.0
+            )
+            
+            return response.choices[0].message.content.strip()
+            
+        except Exception as e:
+            logger.error(f"Error generating optimized answer: {str(e)}")
+            return self._create_fallback_summary(chunks[:3])

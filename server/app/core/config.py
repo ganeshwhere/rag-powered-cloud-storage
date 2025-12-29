@@ -88,6 +88,13 @@ class Settings(BaseSettings):
     cache_ttl_seconds: int = Field(default=3600, description="Default cache TTL in seconds")
     search_cache_ttl_seconds: int = Field(default=1800, description="Search result cache TTL in seconds")
     
+    # Performance Settings
+    search_timeout_seconds: int = Field(default=30, description="Search operation timeout in seconds")
+    embedding_timeout_seconds: int = Field(default=10, description="Embedding generation timeout in seconds")
+    llm_timeout_seconds: int = Field(default=15, description="LLM response timeout in seconds")
+    max_search_results: int = Field(default=20, description="Maximum search results to return")
+    min_search_score: float = Field(default=0.3, description="Minimum search relevance score")
+    
     class Config:
         env_file = ".env"
         case_sensitive = False

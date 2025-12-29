@@ -4,8 +4,8 @@ Pinecone vector store client for embedding storage and similarity search.
 import logging
 import uuid
 import time
-from typing import List, Dict, Any, Optional, Tuple
 import asyncio
+from typing import List, Dict, Any, Optional, Tuple
 from concurrent.futures import ThreadPoolExecutor
 
 from pinecone import Pinecone
@@ -27,7 +27,8 @@ class PineconeClient:
         self.index_name = settings.pinecone_index_name
         self.dimension = 1536  # OpenAI text-embedding-3-small dimension
         self._index = None
-        self._executor = ThreadPoolExecutor(max_workers=4)
+        # Increased thread pool for better performance
+        self._executor = ThreadPoolExecutor(max_workers=8, thread_name_prefix="pinecone")
     
     @property
     def index(self):
@@ -144,7 +145,7 @@ class PineconeClient:
             lambda: self.index.upsert(vectors=vectors)
         )
     
-    async def query_similar(
+    async def query_similar_optimized(
         self,
         query_embedding: List[float],
         user_id: str,
@@ -153,7 +154,7 @@ class PineconeClient:
         min_score: float = 0.0
     ) -> List[Dict[str, Any]]:
         """
-        Query for similar embeddings.
+        Optimized query for similar embeddings with performance improvements.
         
         Args:
             query_embedding: Query vector
@@ -173,37 +174,48 @@ class PineconeClient:
             if document_ids:
                 filter_dict["document_id"] = {"$in": document_ids}
             
-            # Query Pinecone
+            # Optimize top_k for performance
+            optimized_top_k = min(top_k, 50)  # Limit to 50 max
+            
+            # Query Pinecone with timeout
             loop = asyncio.get_event_loop()
-            response = await loop.run_in_executor(
-                self._executor,
-                lambda: self.index.query(
-                    vector=query_embedding,
-                    top_k=top_k,
-                    include_metadata=True,
-                    filter=filter_dict
-                )
+            response = await asyncio.wait_for(
+                loop.run_in_executor(
+                    self._executor,
+                    lambda: self.index.query(
+                        vector=query_embedding,
+                        top_k=optimized_top_k,
+                        include_metadata=True,
+                        filter=filter_dict
+                    )
+                ),
+                timeout=5.0  # 5 second timeout
             )
             
-            # Process results
+            # Process results with optimized filtering
             results = []
             for match in response.matches:
                 if match.score >= min_score:
+                    # Optimize metadata access
+                    metadata = match.metadata or {}
                     results.append({
                         "id": match.id,
                         "score": match.score,
-                        "metadata": match.metadata,
-                        "text": match.metadata.get("text", ""),
-                        "document_id": match.metadata.get("document_id"),
-                        "chunk_index": match.metadata.get("chunk_index")
+                        "metadata": metadata,
+                        "text": metadata.get("text", ""),
+                        "document_id": metadata.get("document_id"),
+                        "chunk_index": metadata.get("chunk_index", 0)
                     })
             
-            logger.info(f"Found {len(results)} similar chunks for user {user_id}")
+            logger.info(f"Found {len(results)} similar chunks for user {user_id} in optimized query")
             return results
             
+        except asyncio.TimeoutError:
+            logger.error("Vector search timed out")
+            return []
         except Exception as e:
-            logger.error(f"Error querying similar embeddings: {str(e)}")
-            raise
+            logger.error(f"Error in optimized vector query: {str(e)}")
+            return []
     
     async def delete_document_embeddings(self, document_id: str) -> bool:
         """

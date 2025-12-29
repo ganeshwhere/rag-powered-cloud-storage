@@ -1,10 +1,11 @@
 'use client'
 
 import React from 'react'
-import { FileText, Clock, ExternalLink } from 'lucide-react'
+import { FileText, Clock, ExternalLink, Eye } from 'lucide-react'
 import { Card } from '@/shared/components/ui/card'
 import { Button } from '@/shared/components/ui/button'
 import { SearchResponse, NoResultsResponse, SearchChunk } from '../types'
+import { useDocumentView } from '@/features/documents/hooks/useDocumentView'
 
 interface SearchResultsProps {
   results: SearchResponse | null
@@ -14,18 +15,31 @@ interface SearchResultsProps {
 
 interface SearchChunkCardProps {
   chunk: SearchChunk
-  onViewDocument?: (documentId: string) => void
 }
 
-function SearchChunkCard({ chunk, onViewDocument }: SearchChunkCardProps) {
+function SearchChunkCard({ chunk }: SearchChunkCardProps) {
+  const { navigateToDocument, openDocument, preloadDocument, loading } = useDocumentView()
+
   const handleViewDocument = () => {
-    if (onViewDocument) {
-      onViewDocument(chunk.document_id)
-    }
+    navigateToDocument(chunk.document_id)
+  }
+
+  const handleQuickView = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    await openDocument(chunk.document_id)
+  }
+
+  // Preload document on hover for faster access
+  const handleMouseEnter = () => {
+    preloadDocument(chunk.document_id)
   }
 
   return (
-    <Card className="p-4 hover:shadow-md transition-shadow">
+    <Card 
+      className="p-4 hover:shadow-md transition-shadow cursor-pointer" 
+      onClick={handleViewDocument}
+      onMouseEnter={handleMouseEnter}
+    >
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2">
@@ -39,6 +53,11 @@ function SearchChunkCard({ chunk, onViewDocument }: SearchChunkCardProps) {
             <span className="text-xs text-muted-foreground">
               Score: {(chunk.score * 100).toFixed(1)}%
             </span>
+            {chunk.metadata?.filename && (
+              <span className="text-xs text-muted-foreground truncate max-w-32" title={chunk.metadata.filename}>
+                {chunk.metadata.filename}
+              </span>
+            )}
           </div>
           
           <p className="text-sm text-foreground leading-relaxed line-clamp-4">
@@ -56,14 +75,27 @@ function SearchChunkCard({ chunk, onViewDocument }: SearchChunkCardProps) {
           )}
         </div>
         
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          onClick={handleViewDocument}
-          className="flex-shrink-0"
-        >
-          <ExternalLink className="h-4 w-4" />
-        </Button>
+        <div className="flex gap-1 flex-shrink-0">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={handleQuickView}
+            className="opacity-70 hover:opacity-100"
+            title="Open document in new tab"
+            disabled={loading}
+          >
+            <Eye className="h-4 w-4" />
+          </Button>
+          
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={handleViewDocument}
+            title="View document details"
+          >
+            <ExternalLink className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </Card>
   )
@@ -96,6 +128,8 @@ function NoResultsCard({ noResults }: { noResults: NoResultsResponse }) {
 }
 
 export function SearchResults({ results, noResults, query }: SearchResultsProps) {
+  const { navigateToDocument } = useDocumentView()
+
   if (noResults) {
     return <NoResultsCard noResults={noResults} />
   }
@@ -105,8 +139,7 @@ export function SearchResults({ results, noResults, query }: SearchResultsProps)
   }
 
   const handleViewDocument = (documentId: string) => {
-    // TODO: Navigate to document view
-    console.log('View document:', documentId)
+    navigateToDocument(documentId)
   }
 
   return (
@@ -146,7 +179,9 @@ export function SearchResults({ results, noResults, query }: SearchResultsProps)
                     size="sm"
                     onClick={() => handleViewDocument(sourceId)}
                     className="text-xs"
+                    title="View document details"
                   >
+                    <ExternalLink className="h-3 w-3 mr-1" />
                     Document {sourceId.slice(0, 8)}...
                   </Button>
                 ))}
@@ -165,7 +200,6 @@ export function SearchResults({ results, noResults, query }: SearchResultsProps)
               <SearchChunkCard
                 key={chunk.id}
                 chunk={chunk}
-                onViewDocument={handleViewDocument}
               />
             ))}
           </div>

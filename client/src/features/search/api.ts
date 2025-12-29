@@ -34,9 +34,13 @@ export const searchApi = {
   },
 
   /**
-   * Clear user's search cache
+   * Clear user's search cache and embedding cache
    */
-  clearSearchCache: async (): Promise<{ message: string }> => {
+  clearSearchCache: async (): Promise<{ 
+    message: string
+    embeddings_cleared: number
+    search_cache_cleared: boolean
+  }> => {
     const response = await api.delete('/search/cache')
     return response.data
   },
@@ -48,6 +52,38 @@ export const searchApi = {
     const response = await api.get('/search/suggestions', {
       params: { query }
     })
+    return response.data
+  },
+
+  /**
+   * Get search performance statistics for monitoring and debugging
+   */
+  getPerformanceStats: async (): Promise<{
+    vector_store_stats: any
+    redis_connected: boolean
+    embedding_cache: {
+      current_size: number
+      max_size: number
+      usage_percentage: number
+    }
+    performance_settings: {
+      search_timeout: number
+      embedding_timeout: number
+      llm_timeout: number
+      max_results: number
+      min_score: number
+      cache_ttl: number
+    }
+    optimization_features: {
+      async_operations: boolean
+      embedding_caching: boolean
+      query_preprocessing: boolean
+      result_limiting: boolean
+      timeout_handling: boolean
+      fallback_responses: boolean
+    }
+  }> => {
+    const response = await api.get('/search/performance')
     return response.data
   }
 }

@@ -60,6 +60,7 @@ export const queryKeys = {
     all: ['search'] as const,
     results: (query: string) => [...queryKeys.search.all, 'results', query] as const,
     history: ['search', 'history'] as const,
+    performance: ['search', 'performance'] as const,
   },
 } as const
 
