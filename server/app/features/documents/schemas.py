@@ -69,6 +69,20 @@ class PresignedUploadRequest(BaseModel):
         }
 
 
+class ConfirmUploadRequest(BaseModel):
+    """Schema for confirming presigned upload completion."""
+    
+    file_size: int = Field(..., ge=1, description="Actual file size in bytes")
+    
+    @field_validator('file_size')
+    @classmethod
+    def validate_file_size(cls, v):
+        max_size = settings.max_file_size_mb * 1024 * 1024
+        if v > max_size:
+            raise ValueError(f"File size exceeds maximum limit of {settings.max_file_size_mb}MB")
+        return v
+
+
 class PresignedUploadResponse(BaseModel):
     """Schema for presigned upload URL response."""
     

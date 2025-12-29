@@ -25,6 +25,13 @@ export const useDocuments = (params: UseDocumentsParams = {}) => {
     enabled,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
+    refetchInterval: (query) => {
+      // Auto-refresh if any documents are still processing
+      const hasProcessingDocs = query.state.data?.documents?.some(
+        doc => doc.status === 'processing' || doc.status === 'pending'
+      )
+      return hasProcessingDocs ? 5000 : false // 5 seconds if processing, otherwise no polling
+    },
   })
 
   const invalidateDocuments = () => {

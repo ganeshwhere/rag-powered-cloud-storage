@@ -8,6 +8,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import init_db, close_db
 
+# Import Celery tasks to register them with the app
+from app.workers.tasks import process_document_task, health_check_task, cleanup_document_task
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

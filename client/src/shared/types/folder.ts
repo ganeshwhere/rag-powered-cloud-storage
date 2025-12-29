@@ -4,6 +4,7 @@ export interface Folder {
   parent_id?: string
   name: string
   path: string
+  document_count?: number
   created_at: string
   updated_at: string
 }
@@ -20,6 +21,8 @@ export interface FolderUpdateRequest {
 export interface FolderListResponse {
   folders: Folder[]
   total: number
+  page: number
+  size: number
 }
 
 export interface FolderContentsResponse {

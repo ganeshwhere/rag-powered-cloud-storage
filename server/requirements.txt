@@ -20,8 +20,8 @@ redis>=5.0.0
 boto3>=1.34.0
 botocore>=1.34.0
 
-# Document Processing - simplified to avoid conflicts
-unstructured>=0.10.0
+# Document Processing - with PDF support
+unstructured[pdf]>=0.10.0
 pdfminer.six>=20221105
 pillow-heif>=1.1.0
 langchain>=0.1.0

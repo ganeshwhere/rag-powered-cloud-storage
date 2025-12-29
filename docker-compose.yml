@@ -71,7 +71,7 @@ services:
         condition: service_healthy
     volumes:
       - ./server:/app
-    command: celery -A app.workers.celery_app worker --loglevel=info
+    command: celery -A app.workers.celery_app worker --loglevel=info --queues=celery,default,document_processing
 
 volumes:
   postgres_data:

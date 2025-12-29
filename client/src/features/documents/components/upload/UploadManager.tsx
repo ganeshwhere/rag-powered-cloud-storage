@@ -1,13 +1,14 @@
 'use client'
 
-import React, { useState, useCallback, useRef } from 'react'
+import React, { useState, useCallback } from 'react'
 import { FileUploadZone } from './FileUploadZone'
 import { UploadProgress } from './UploadProgress'
+import { useDocumentUpload } from '../../hooks/useDocumentUpload'
 import { UploadFile, UploadConfig, DEFAULT_UPLOAD_CONFIG } from '../../types'
 
 interface UploadManagerProps {
-  onUploadComplete?: (files: UploadFile[]) => void
-  onUploadStart?: (files: UploadFile[]) => void
+  onUploadComplete?: (documentId: string, file: File) => void
+  onUploadStart?: (files: File[]) => void
   onUploadProgress?: (fileId: string, progress: number) => void
   onUploadError?: (fileId: string, error: string) => void
   config?: Partial<UploadConfig>
@@ -24,133 +25,51 @@ export function UploadManager({
   folderId,
   className,
 }: UploadManagerProps) {
-  const [files, setFiles] = useState<UploadFile[]>([])
-  const [isUploading, setIsUploading] = useState(false)
   const uploadConfig = { ...DEFAULT_UPLOAD_CONFIG, ...config }
-  const abortControllersRef = useRef<Map<string, AbortController>>(new Map())
 
-  const updateFileStatus = useCallback((fileId: string, updates: Partial<UploadFile>) => {
-    setFiles(prev => prev.map(file => 
-      file.id === fileId ? { ...file, ...updates } : file
-    ))
-  }, [])
-
-  const simulateUpload = useCallback(async (file: UploadFile) => {
-    const controller = new AbortController()
-    abortControllersRef.current.set(file.id, controller)
-
-    try {
-      updateFileStatus(file.id, { status: 'uploading', progress: 0 })
-      
-      // Simulate upload progress
-      for (let progress = 0; progress <= 100; progress += 10) {
-        if (controller.signal.aborted) {
-          throw new Error('Upload cancelled')
-        }
-        
-        await new Promise(resolve => setTimeout(resolve, 200))
-        updateFileStatus(file.id, { progress })
-        onUploadProgress?.(file.id, progress)
-      }
-
-      // Simulate processing phase
-      updateFileStatus(file.id, { status: 'processing', progress: 100 })
-      await new Promise(resolve => setTimeout(resolve, 1000))
-
-      // Simulate random success/failure for demo
-      const success = Math.random() > 0.2 // 80% success rate
-      
-      if (success) {
-        const documentId = `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-        updateFileStatus(file.id, { 
-          status: 'completed', 
-          progress: 100,
-          documentId 
-        })
-      } else {
-        throw new Error('Processing failed - simulated error')
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Upload failed'
-      updateFileStatus(file.id, { 
-        status: 'failed', 
-        error: errorMessage 
-      })
-      onUploadError?.(file.id, errorMessage)
-    } finally {
-      abortControllersRef.current.delete(file.id)
-    }
-  }, [updateFileStatus, onUploadProgress, onUploadError])
+  const {
+    uploadFiles,
+    uploadingFiles,
+    removeFile,
+    clearCompleted,
+    clearAll,
+    isUploading,
+    error,
+  } = useDocumentUpload({
+    folder_id: folderId,
+    onUploadComplete: (documentId, file) => {
+      onUploadComplete?.(documentId, file)
+    },
+    onUploadError: (error, file) => {
+      const fileId = `${file.name}-${file.size}-${file.lastModified}`
+      onUploadError?.(fileId, error.message)
+    },
+    onUploadProgress: (progress) => {
+      onUploadProgress?.(progress.fileId, progress.progress)
+    },
+    usePresignedUrl: true,
+  })
 
   const handleFilesSelected = useCallback(async (newFiles: UploadFile[]) => {
-    setFiles(prev => [...prev, ...newFiles])
-    setIsUploading(true)
-    onUploadStart?.(newFiles)
-
-    // Process uploads with concurrency limit
-    const uploadPromises: Promise<void>[] = []
-    let activeUploads = 0
-
-    for (const file of newFiles) {
-      if (activeUploads >= uploadConfig.maxConcurrentUploads) {
-        await Promise.race(uploadPromises)
-        activeUploads--
-      }
-
-      activeUploads++
-      const uploadPromise = simulateUpload(file).finally(() => {
-        activeUploads--
-      })
-      uploadPromises.push(uploadPromise)
-    }
-
-    // Wait for all uploads to complete
-    await Promise.allSettled(uploadPromises)
-    setIsUploading(false)
-
-    // Notify completion
-    const completedFiles = files.filter(f => f.status === 'completed')
-    if (completedFiles.length > 0) {
-      onUploadComplete?.(completedFiles)
-    }
-  }, [files, uploadConfig.maxConcurrentUploads, simulateUpload, onUploadStart, onUploadComplete])
+    const files = newFiles.map(uf => uf.file)
+    onUploadStart?.(files)
+    await uploadFiles(files, folderId)
+  }, [uploadFiles, folderId, onUploadStart])
 
   const handleRetry = useCallback((fileId: string) => {
-    const file = files.find(f => f.id === fileId)
-    if (file) {
-      updateFileStatus(fileId, { status: 'pending', progress: 0, error: undefined })
-      simulateUpload(file)
+    const uploadFile = uploadingFiles.find(f => f.id === fileId)
+    if (uploadFile) {
+      uploadFiles([uploadFile.file], folderId)
     }
-  }, [files, updateFileStatus, simulateUpload])
+  }, [uploadingFiles, uploadFiles, folderId])
 
   const handleCancel = useCallback((fileId: string) => {
-    const controller = abortControllersRef.current.get(fileId)
-    if (controller) {
-      controller.abort()
-    }
-    updateFileStatus(fileId, { status: 'failed', error: 'Upload cancelled' })
-  }, [updateFileStatus])
+    removeFile(fileId)
+  }, [removeFile])
 
   const handleRemove = useCallback((fileId: string) => {
-    setFiles(prev => prev.filter(f => f.id !== fileId))
-    const controller = abortControllersRef.current.get(fileId)
-    if (controller) {
-      controller.abort()
-      abortControllersRef.current.delete(fileId)
-    }
-  }, [])
-
-  const clearCompleted = useCallback(() => {
-    setFiles(prev => prev.filter(f => f.status !== 'completed'))
-  }, [])
-
-  const clearAll = useCallback(() => {
-    // Cancel all active uploads
-    abortControllersRef.current.forEach(controller => controller.abort())
-    abortControllersRef.current.clear()
-    setFiles([])
-    setIsUploading(false)
-  }, [])
+    removeFile(fileId)
+  }, [removeFile])
 
   return (
     <div className={className}>
@@ -161,12 +80,12 @@ export function UploadManager({
         folderId={folderId}
       />
       
-      {files.length > 0 && (
+      {uploadingFiles.length > 0 && (
         <div className="mt-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-medium">Upload Progress</h3>
             <div className="flex gap-2">
-              {files.some(f => f.status === 'completed') && (
+              {uploadingFiles.some(f => f.status === 'completed') && (
                 <button
                   onClick={clearCompleted}
                   className="text-sm text-gray-500 hover:text-gray-700"
@@ -184,11 +103,19 @@ export function UploadManager({
           </div>
           
           <UploadProgress
-            files={files}
+            files={uploadingFiles}
             onRetry={handleRetry}
             onCancel={handleCancel}
             onRemove={handleRemove}
           />
+        </div>
+      )}
+
+      {error && (
+        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-600 text-sm">
+            Upload Error: {error.message}
+          </p>
         </div>
       )}
     </div>

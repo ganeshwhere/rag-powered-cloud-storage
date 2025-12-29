@@ -158,7 +158,8 @@ def health_check_task(self) -> dict:
     """
     try:
         # Test database connection
-        self.db.execute("SELECT 1")
+        from sqlalchemy import text
+        self.db.execute(text("SELECT 1"))
         
         return {
             "status": "healthy",

@@ -95,12 +95,20 @@ export default function Home() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button 
-                className="w-full" 
-                disabled={!isAuthenticated}
-              >
-                Upload
-              </Button>
+              {isAuthenticated ? (
+                <Link href="/upload-test">
+                  <Button className="w-full">
+                    Upload
+                  </Button>
+                </Link>
+              ) : (
+                <Button 
+                  className="w-full" 
+                  disabled
+                >
+                  Upload
+                </Button>
+              )}
             </CardContent>
           </Card>
 
@@ -132,13 +140,24 @@ export default function Home() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button 
-                variant="secondary" 
-                className="w-full"
-                disabled={!isAuthenticated}
-              >
-                Browse
-              </Button>
+              {isAuthenticated ? (
+                <Link href="/documents">
+                  <Button 
+                    variant="secondary" 
+                    className="w-full"
+                  >
+                    Browse
+                  </Button>
+                </Link>
+              ) : (
+                <Button 
+                  variant="secondary" 
+                  className="w-full"
+                  disabled
+                >
+                  Browse
+                </Button>
+              )}
             </CardContent>
           </Card>
         </div>

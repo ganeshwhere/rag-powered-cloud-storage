@@ -19,6 +19,7 @@ from app.features.documents.schemas import (
     DocumentListResponse,
     PresignedUploadRequest,
     PresignedUploadResponse,
+    ConfirmUploadRequest,
     DownloadUrlResponse,
     DocumentStatusResponse,
     DocumentDeleteResponse,
@@ -110,6 +111,39 @@ async def generate_presigned_upload_url(
         raise
     except Exception as e:
         logger.error(f"Unexpected error generating presigned URL: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.post("/{document_id}/confirm", response_model=DocumentResponse)
+async def confirm_presigned_upload(
+    document_id: uuid.UUID,
+    request: ConfirmUploadRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Confirm completion of presigned upload and trigger document processing.
+    
+    - **document_id**: UUID of the document (from presigned upload response)
+    - **file_size**: Actual size of the uploaded file in bytes
+    
+    This endpoint should be called after successfully uploading to S3 using the presigned URL.
+    It updates the document record and triggers background processing.
+    """
+    try:
+        service = DocumentService(db)
+        document = await service.confirm_presigned_upload(
+            user_id=current_user.id,
+            document_id=document_id,
+            file_size=request.file_size
+        )
+        
+        return document
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error confirming upload: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 

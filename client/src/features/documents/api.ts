@@ -25,7 +25,7 @@ export const documentApi = {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
-      })
+      }) 
       
       return response.data
     } catch (error: any) {
@@ -60,7 +60,9 @@ export const documentApi = {
       // Add the file last (required by S3)
       formData.append('file', file)
 
-      await api.post(presignedData.upload_url, formData, {
+      // Use a plain axios instance without authentication headers for S3
+      const axios = (await import('axios')).default
+      await axios.post(presignedData.upload_url, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -70,9 +72,19 @@ export const documentApi = {
             onProgress(progress)
           }
         },
-        // Don't use the base URL for S3 uploads
-        baseURL: '',
       })
+    } catch (error: any) {
+      throw new Error(handleApiError(error))
+    }
+  },
+
+  // Confirm presigned upload completion
+  async confirmUpload(documentId: string, fileSize: number): Promise<Document> {
+    try {
+      const response = await api.post<Document>(`/documents/${documentId}/confirm`, {
+        file_size: fileSize
+      })
+      return response.data
     } catch (error: any) {
       throw new Error(handleApiError(error))
     }

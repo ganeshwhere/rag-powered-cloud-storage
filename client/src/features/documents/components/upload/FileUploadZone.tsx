@@ -20,6 +20,7 @@ export function FileUploadZone({
   config = {},
   disabled = false,
   className,
+  folderId,
 }: FileUploadZoneProps) {
   const [dragActive, setDragActive] = useState(false)
   const [errors, setErrors] = useState<string[]>([])

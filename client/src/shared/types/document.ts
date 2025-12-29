@@ -13,9 +13,10 @@ export interface Document {
   processing_error?: string
   chunk_count: number
   total_tokens: number
-  metadata: Record<string, any>
+  extra_metadata?: Record<string, any> | null
   created_at: string
   updated_at: string
+  file_size_mb: number
 }
 
 export type DocumentStatus = 'pending' | 'processing' | 'completed' | 'failed'

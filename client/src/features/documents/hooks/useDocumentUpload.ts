@@ -183,6 +183,9 @@ export const useDocumentUpload = (options: UseDocumentUploadOptions = {}) => {
           file,
           fileId,
         })
+
+        // Confirm the upload completion
+        await documentApi.confirmUpload(presignedData.document_id, file.size)
       } else {
         // Use direct upload
         updateFileStatus(fileId, 'uploading', 0)

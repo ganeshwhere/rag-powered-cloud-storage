@@ -5,12 +5,12 @@ import { UploadManager } from './UploadManager'
 import { UploadFile } from '../../types'
 
 export function UploadDemo() {
-  const handleUploadComplete = (files: UploadFile[]) => {
-    console.log('Upload completed for files:', files.map(f => f.file.name))
+  const handleUploadComplete = (documentId: string, file: File) => {
+    console.log('Upload completed for file:', file.name, 'Document ID:', documentId)
   }
 
-  const handleUploadStart = (files: UploadFile[]) => {
-    console.log('Upload started for files:', files.map(f => f.file.name))
+  const handleUploadStart = (files: File[]) => {
+    console.log('Upload started for files:', files.map(f => f.name))
   }
 
   const handleUploadProgress = (fileId: string, progress: number) => {
