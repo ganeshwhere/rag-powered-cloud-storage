@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { documentApi } from '../api'
+import { documentViewService } from '../services/documentViewService'
 
 export const useDocumentActions = () => {
   const queryClient = useQueryClient()
@@ -20,10 +21,14 @@ export const useDocumentActions = () => {
 
   const deleteDocument = useMutation({
     mutationFn: (documentId: string) => documentApi.deleteDocument(documentId),
+    retry: false, // Disable retries since we handle 500 errors in the API function
     onSuccess: (_, documentId) => {
-      // Remove document from cache
+      // Remove document from React Query cache
       queryClient.removeQueries({ queryKey: ['document', documentId] })
       queryClient.removeQueries({ queryKey: ['document-status', documentId] })
+      
+      // Clear document from view service cache
+      documentViewService.clearDocumentCache(documentId)
       
       // Invalidate documents list
       queryClient.invalidateQueries({ queryKey: ['documents'] })
@@ -41,6 +46,9 @@ export const useDocumentActions = () => {
       successfullyDeleted.forEach(documentId => {
         queryClient.removeQueries({ queryKey: ['document', documentId] })
         queryClient.removeQueries({ queryKey: ['document-status', documentId] })
+        
+        // Clear document from view service cache
+        documentViewService.clearDocumentCache(documentId)
       })
       
       // Invalidate documents list

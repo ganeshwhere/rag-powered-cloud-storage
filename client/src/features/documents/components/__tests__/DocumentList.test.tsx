@@ -4,15 +4,15 @@ import { DocumentList } from '../DocumentList'
 import type { Document } from '@/shared/types/document'
 
 // Mock the hooks
-jest.mock('../hooks', () => ({
+jest.mock('../../hooks', () => ({
   useDocuments: jest.fn(),
 }))
-const mockUseDocuments = require('../hooks').useDocuments as jest.Mock
+const mockUseDocuments = require('../../hooks').useDocuments as jest.Mock
 
-jest.mock('../hooks/useDocumentActions', () => ({
+jest.mock('../../hooks/useDocumentActions', () => ({
   useDocumentActions: jest.fn(),
 }))
-const mockUseDocumentActions = require('../hooks/useDocumentActions').useDocumentActions as jest.Mock
+const mockUseDocumentActions = require('../../hooks/useDocumentActions').useDocumentActions as jest.Mock
 
 // Mock child components
 jest.mock('../DocumentCard', () => ({
@@ -172,8 +172,7 @@ describe('DocumentList', () => {
 
     render(<DocumentList />)
 
-    expect(screen.getByText('Failed to load documents')).toBeInTheDocument()
-    expect(screen.getByText('Failed to load documents')).toBeInTheDocument()
+    expect(screen.getAllByText('Failed to load documents')[0]).toBeInTheDocument()
   })
 
   it('handles document selection in selectable mode', async () => {

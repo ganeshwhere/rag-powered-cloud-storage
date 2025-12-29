@@ -62,6 +62,12 @@ export const folderApi = {
         params: options,
       })
     } catch (error: any) {
+      // If folder not found (404), consider it already deleted (success case)
+      if (error.response?.status === 404 || 
+          error.message?.includes('not found') || 
+          error.message?.includes('404')) {
+        return // Silently succeed - folder is already deleted
+      }
       throw new Error(handleApiError(error))
     }
   },

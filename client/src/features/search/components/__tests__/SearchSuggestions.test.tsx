@@ -104,7 +104,9 @@ describe('SearchSuggestions', () => {
     )
     
     expect(screen.getByText('Getting suggestions...')).toBeInTheDocument()
-    expect(screen.getByTestId('loading-spinner') || screen.getByRole('status')).toBeInTheDocument()
+    // Check for the loading spinner by class
+    const loadingElement = document.querySelector('.animate-spin')
+    expect(loadingElement).toBeInTheDocument()
   })
 
   it('returns null when no suggestions and not loading', () => {

@@ -149,6 +149,13 @@ export const documentApi = {
     try {
       await api.delete(`/documents/${documentId}`)
     } catch (error: any) {
+      // If document not found (404), consider it already deleted (success case)
+      if (error.response?.status === 404 || 
+          error.message?.includes('not found') || 
+          error.message?.includes('404')) {
+        return // Silently succeed - document is already deleted
+      }
+      
       throw new Error(handleApiError(error))
     }
   },

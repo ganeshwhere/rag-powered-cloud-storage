@@ -70,6 +70,7 @@ export function useDocumentView() {
  * Hook for getting document data with caching
  */
 export function useDocument(documentId: string) {
+  const router = useRouter()
   const [document, setDocument] = useState<Document | null>(
     documentViewService.getCachedDocument(documentId)
   )
@@ -86,11 +87,19 @@ export function useDocument(documentId: string) {
       const doc = await documentViewService.getDocument(documentId)
       setDocument(doc)
     } catch (err: any) {
-      setError(err.message || 'Failed to load document')
+      const errorMessage = err.message || 'Failed to load document'
+      setError(errorMessage)
+      
+      // If document not found (404), redirect to documents list after a short delay
+      if (errorMessage.includes('not found') || errorMessage.includes('deleted')) {
+        setTimeout(() => {
+          router.push('/documents')
+        }, 2000) // 2 second delay to show the error message
+      }
     } finally {
       setLoading(false)
     }
-  }, [documentId])
+  }, [documentId, router])
 
   // Load document on mount if not cached
   useState(() => {

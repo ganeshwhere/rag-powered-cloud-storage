@@ -35,7 +35,7 @@ describe('ProtectedRoute', () => {
       </ProtectedRoute>
     )
 
-    expect(screen.getByText('Protected Content')).not.toBeInTheDocument()
+    expect(screen.queryByText('Protected Content')).not.toBeInTheDocument()
     // Check for the loading spinner by class or other attributes
     const loadingElement = document.querySelector('.animate-spin')
     expect(loadingElement).toBeInTheDocument()

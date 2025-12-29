@@ -1,5 +1,6 @@
 import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@/test-utils/render'
+import userEvent from '@testing-library/user-event'
 import { SearchInterface } from '../SearchInterface'
 import { useSearch } from '../../hooks/useSearch'
 import { useSearchHistory } from '../../hooks/useSearchHistory'
@@ -19,6 +20,7 @@ describe('SearchInterface', () => {
   const mockClearResults = jest.fn()
   const mockRefetchHistory = jest.fn()
   const mockGetSuggestions = jest.fn()
+  const user = userEvent.setup()
 
   beforeEach(() => {
     mockUseSearch.mockReturnValue({
@@ -69,14 +71,13 @@ describe('SearchInterface', () => {
     render(<SearchInterface />)
     
     const input = screen.getByPlaceholderText('Search your documents...')
-    const searchButton = screen.getByRole('button', { name: /search/i })
     
     // Type query
-    fireEvent.change(input, { target: { value: 'test query' } })
+    await user.type(input, 'test query')
     expect(input).toHaveValue('test query')
     
     // Press Enter
-    fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' })
+    await user.keyboard('{Enter}')
     
     await waitFor(() => {
       expect(mockSearchDocuments).toHaveBeenCalledWith({
@@ -91,8 +92,8 @@ describe('SearchInterface', () => {
     const input = screen.getByPlaceholderText('Search your documents...')
     const searchButton = screen.getByRole('button', { name: /search/i })
     
-    fireEvent.change(input, { target: { value: 'test query' } })
-    fireEvent.click(searchButton)
+    await user.type(input, 'test query')
+    await user.click(searchButton)
     
     await waitFor(() => {
       expect(mockSearchDocuments).toHaveBeenCalledWith({
@@ -166,14 +167,14 @@ describe('SearchInterface', () => {
     })
   })
 
-  it('handles clear button click', () => {
+  it('handles clear button click', async () => {
     render(<SearchInterface />)
     
     const input = screen.getByPlaceholderText('Search your documents...')
-    fireEvent.change(input, { target: { value: 'test query' } })
+    await user.type(input, 'test query')
     
     const clearButton = screen.getByRole('button', { name: /×/i })
-    fireEvent.click(clearButton)
+    await user.click(clearButton)
     
     expect(input).toHaveValue('')
     expect(mockClearResults).toHaveBeenCalled()
@@ -200,8 +201,8 @@ describe('SearchInterface', () => {
     render(<SearchInterface filters={filters} />)
     
     const input = screen.getByPlaceholderText('Search your documents...')
-    fireEvent.change(input, { target: { value: 'test query' } })
-    fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' })
+    await user.type(input, 'test query')
+    await user.keyboard('{Enter}')
     
     await waitFor(() => {
       expect(mockSearchDocuments).toHaveBeenCalledWith({

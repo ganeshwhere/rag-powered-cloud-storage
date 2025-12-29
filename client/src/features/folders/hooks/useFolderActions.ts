@@ -42,6 +42,9 @@ export const useFolderActions = () => {
       // Remove folder from cache
       queryClient.removeQueries({ queryKey: ['folder', folderId] })
       
+      // Remove breadcrumbs queries that include this folder
+      queryClient.removeQueries({ queryKey: ['folder-breadcrumbs', folderId] })
+      
       // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: ['folders'] })
       queryClient.invalidateQueries({ queryKey: ['folder-tree'] })

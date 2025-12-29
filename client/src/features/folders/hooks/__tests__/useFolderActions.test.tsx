@@ -28,11 +28,12 @@ describe('useFolderActions', () => {
   const mockFolder = {
     id: 'folder123',
     name: 'Test Folder',
-    parent_id: null,
+    user_id: 'user123',
+    parent_id: undefined,
+    path: '/Test Folder',
     created_at: '2023-01-01T00:00:00Z',
     updated_at: '2023-01-01T00:00:00Z',
     document_count: 0,
-    subfolder_count: 0
   }
 
   beforeEach(() => {
@@ -48,15 +49,18 @@ describe('useFolderActions', () => {
 
     const createRequest: FolderCreateRequest = {
       name: 'Test Folder',
-      parent_id: null
+      parent_id: undefined
     }
 
     await act(async () => {
       await result.current.createFolder.mutateAsync(createRequest)
     })
 
+    await waitFor(() => {
+      expect(result.current.createFolder.isSuccess).toBe(true)
+    })
+
     expect(mockFolderApi.createFolder).toHaveBeenCalledWith(createRequest)
-    expect(result.current.createFolder.isSuccess).toBe(true)
     expect(result.current.createFolder.data).toEqual(mockFolder)
   })
 
@@ -79,8 +83,11 @@ describe('useFolderActions', () => {
       })
     })
 
+    await waitFor(() => {
+      expect(result.current.updateFolder.isSuccess).toBe(true)
+    })
+
     expect(mockFolderApi.updateFolder).toHaveBeenCalledWith('folder123', updateRequest)
-    expect(result.current.updateFolder.isSuccess).toBe(true)
     expect(result.current.updateFolder.data).toEqual(updatedFolder)
   })
 
@@ -98,14 +105,17 @@ describe('useFolderActions', () => {
       })
     })
 
+    await waitFor(() => {
+      expect(result.current.deleteFolder.isSuccess).toBe(true)
+    })
+
     expect(mockFolderApi.deleteFolder).toHaveBeenCalledWith('folder123', {
       delete_documents: true
     })
-    expect(result.current.deleteFolder.isSuccess).toBe(true)
   })
 
   it('moves a folder successfully', async () => {
-    const movedFolder = { ...mockFolder, parent_id: 'parent123' }
+    const movedFolder = { ...mockFolder, parent_id: 'parent123', path: '/parent/Test Folder' }
     mockFolderApi.moveFolder.mockResolvedValue(movedFolder)
 
     const { result } = renderHook(() => useFolderActions(), {
@@ -119,14 +129,18 @@ describe('useFolderActions', () => {
       })
     })
 
+    await waitFor(() => {
+      expect(result.current.moveFolder.isSuccess).toBe(true)
+    })
+
     expect(mockFolderApi.moveFolder).toHaveBeenCalledWith('folder123', 'parent123')
-    expect(result.current.moveFolder.isSuccess).toBe(true)
     expect(result.current.moveFolder.data).toEqual(movedFolder)
   })
 
   it('bulk deletes folders successfully', async () => {
     const bulkDeleteResult = {
-      deleted_folders: ['folder1', 'folder2'],
+      deleted_count: 2,
+      failed_count: 1,
       failed_folders: ['folder3']
     }
     mockFolderApi.bulkDeleteFolders.mockResolvedValue(bulkDeleteResult)
@@ -142,11 +156,14 @@ describe('useFolderActions', () => {
       })
     })
 
+    await waitFor(() => {
+      expect(result.current.bulkDeleteFolders.isSuccess).toBe(true)
+    })
+
     expect(mockFolderApi.bulkDeleteFolders).toHaveBeenCalledWith(
       ['folder1', 'folder2', 'folder3'],
       { delete_documents: false }
     )
-    expect(result.current.bulkDeleteFolders.isSuccess).toBe(true)
     expect(result.current.bulkDeleteFolders.data).toEqual(bulkDeleteResult)
   })
 
@@ -162,14 +179,17 @@ describe('useFolderActions', () => {
       try {
         await result.current.createFolder.mutateAsync({
           name: 'Test Folder',
-          parent_id: null
+          parent_id: undefined
         })
       } catch (e) {
         // Expected to throw
       }
     })
 
-    expect(result.current.createFolder.isError).toBe(true)
+    await waitFor(() => {
+      expect(result.current.createFolder.isError).toBe(true)
+    })
+
     expect(result.current.createFolder.error).toEqual(error)
   })
 
@@ -192,7 +212,10 @@ describe('useFolderActions', () => {
       }
     })
 
-    expect(result.current.updateFolder.isError).toBe(true)
+    await waitFor(() => {
+      expect(result.current.updateFolder.isError).toBe(true)
+    })
+
     expect(result.current.updateFolder.error).toEqual(error)
   })
 
@@ -214,7 +237,10 @@ describe('useFolderActions', () => {
       }
     })
 
-    expect(result.current.deleteFolder.isError).toBe(true)
+    await waitFor(() => {
+      expect(result.current.deleteFolder.isError).toBe(true)
+    })
+
     expect(result.current.deleteFolder.error).toEqual(error)
   })
 
@@ -237,13 +263,16 @@ describe('useFolderActions', () => {
       }
     })
 
-    expect(result.current.moveFolder.isError).toBe(true)
+    await waitFor(() => {
+      expect(result.current.moveFolder.isError).toBe(true)
+    })
+
     expect(result.current.moveFolder.error).toEqual(error)
   })
 
   it('tracks loading states correctly', async () => {
     let resolveCreate: (value: any) => void
-    const createPromise = new Promise(resolve => {
+    const createPromise = new Promise<typeof mockFolder>(resolve => {
       resolveCreate = resolve
     })
     mockFolderApi.createFolder.mockReturnValue(createPromise)
@@ -256,11 +285,13 @@ describe('useFolderActions', () => {
     act(() => {
       result.current.createFolder.mutate({
         name: 'Test Folder',
-        parent_id: null
+        parent_id: undefined
       })
     })
 
-    expect(result.current.createFolder.isPending).toBe(true)
+    await waitFor(() => {
+      expect(result.current.createFolder.isPending).toBe(true)
+    })
 
     // Resolve operation
     await act(async () => {
@@ -268,8 +299,10 @@ describe('useFolderActions', () => {
       await createPromise
     })
 
-    expect(result.current.createFolder.isPending).toBe(false)
-    expect(result.current.createFolder.isSuccess).toBe(true)
+    await waitFor(() => {
+      expect(result.current.createFolder.isPending).toBe(false)
+      expect(result.current.createFolder.isSuccess).toBe(true)
+    })
   })
 
   it('invalidates cache after successful operations', async () => {
@@ -296,7 +329,7 @@ describe('useFolderActions', () => {
     await act(async () => {
       await result.current.createFolder.mutateAsync({
         name: 'Test Folder',
-        parent_id: null
+        parent_id: undefined
       })
     })
 

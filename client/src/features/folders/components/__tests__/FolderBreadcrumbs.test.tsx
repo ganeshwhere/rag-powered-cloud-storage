@@ -1,12 +1,12 @@
-import { render, screen, fireEvent, waitFor } from '@/test-utils'
+import { render, screen } from '@/test-utils'
 import userEvent from '@testing-library/user-event'
 import { FolderBreadcrumbs } from '../FolderBreadcrumbs'
 
 // Mock the hooks
-jest.mock('../hooks', () => ({
-  useFolderBreadcrumbs: jest.fn(),
-}))
-const mockUseFolderBreadcrumbs = require('../hooks').useFolderBreadcrumbs as jest.Mock
+jest.mock('../../hooks/useFolderBreadcrumbs')
+
+import { useFolderBreadcrumbs } from '../../hooks/useFolderBreadcrumbs'
+const mockUseFolderBreadcrumbs = useFolderBreadcrumbs as jest.MockedFunction<typeof useFolderBreadcrumbs>
 
 describe('FolderBreadcrumbs', () => {
   const mockBreadcrumbs = [
@@ -21,6 +21,8 @@ describe('FolderBreadcrumbs', () => {
     mockUseFolderBreadcrumbs.mockReturnValue({
       breadcrumbs: mockBreadcrumbs,
       isLoading: false,
+      isError: false,
+      error: null,
     })
   })
 
@@ -40,11 +42,33 @@ describe('FolderBreadcrumbs', () => {
     mockUseFolderBreadcrumbs.mockReturnValue({
       breadcrumbs: [],
       isLoading: true,
+      isError: false,
+      error: null,
     })
 
     render(<FolderBreadcrumbs folderId="folder-1" />)
 
     expect(document.querySelectorAll('.animate-pulse')).toHaveLength(2)
+  })
+
+  it('shows error state when folder cannot be loaded', () => {
+    mockUseFolderBreadcrumbs.mockReturnValue({
+      breadcrumbs: [],
+      isLoading: false,
+      isError: true,
+      error: new Error('Folder not found'),
+    })
+
+    render(<FolderBreadcrumbs folderId="folder-1" />)
+
+    // Should show home button
+    expect(screen.getByRole('button', { name: /home/i })).toBeInTheDocument()
+    
+    // Should show error message
+    expect(screen.getByText('Unable to load path')).toBeInTheDocument()
+    
+    // Should show error icon
+    expect(document.querySelector('.lucide-circle-alert')).toBeInTheDocument()
   })
 
   it('handles home navigation', async () => {
@@ -119,6 +143,8 @@ describe('FolderBreadcrumbs', () => {
     mockUseFolderBreadcrumbs.mockReturnValue({
       breadcrumbs: [],
       isLoading: false,
+      isError: false,
+      error: null,
     })
 
     render(<FolderBreadcrumbs folderId="folder-1" />)
@@ -134,6 +160,8 @@ describe('FolderBreadcrumbs', () => {
     mockUseFolderBreadcrumbs.mockReturnValue({
       breadcrumbs: [{ id: 'folder-1', name: 'Single Folder' }],
       isLoading: false,
+      isError: false,
+      error: null,
     })
 
     render(<FolderBreadcrumbs folderId="folder-1" />)

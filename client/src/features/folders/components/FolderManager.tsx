@@ -67,6 +67,14 @@ export const FolderManager: React.FC<FolderManagerProps> = ({
     })
   }
 
+  const handleDialogSuccess = (folder?: Folder) => {
+    // If a folder was deleted and it was the currently selected folder,
+    // reset the selection to avoid 404 errors
+    if (dialogState.operation === 'delete' && dialogState.folder && selectedFolderId === dialogState.folder.id) {
+      setSelectedFolderId(undefined)
+    }
+  }
+
   const handleCloseDialog = () => {
     setDialogState({
       isOpen: false,
@@ -204,6 +212,7 @@ export const FolderManager: React.FC<FolderManagerProps> = ({
         folder={dialogState.folder as Folder}
         parentId={dialogState.parentId}
         onClose={handleCloseDialog}
+        onSuccess={handleDialogSuccess}
       />
     </div>
   )

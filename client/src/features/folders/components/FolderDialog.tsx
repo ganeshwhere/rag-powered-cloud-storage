@@ -60,9 +60,19 @@ export const FolderDialog: React.FC<FolderDialogProps> = ({
           folderId: folder.id, 
           options: { delete_documents: deleteDocuments }
         })
+        onSuccess?.(folder)
         onClose()
-      } catch (error) {
+      } catch (error: any) {
         console.error('Failed to delete folder:', error)
+        // Show user-friendly error message
+        const errorMessage = error.message || 'Failed to delete folder'
+        if (errorMessage.includes('not found')) {
+          setErrors(['Folder not found. It may have already been deleted.'])
+        } else if (errorMessage.includes('Network Error') || errorMessage.includes('fetch')) {
+          setErrors(['Unable to connect to server. Please check your connection and try again.'])
+        } else {
+          setErrors([errorMessage])
+        }
       }
       return
     }
@@ -94,7 +104,12 @@ export const FolderDialog: React.FC<FolderDialogProps> = ({
       onSuccess?.(result)
       onClose()
     } catch (error: any) {
-      setErrors([error.message || 'An error occurred'])
+      const errorMessage = error.message || 'An error occurred'
+      if (errorMessage.includes('Network Error') || errorMessage.includes('fetch')) {
+        setErrors(['Unable to connect to server. Please check your connection and try again.'])
+      } else {
+        setErrors([errorMessage])
+      }
     }
   }
 

@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { ChevronRight, Home } from 'lucide-react'
+import { ChevronRight, Home, AlertCircle } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { useFolderBreadcrumbs } from '../hooks'
 
@@ -16,7 +16,7 @@ export const FolderBreadcrumbs: React.FC<FolderBreadcrumbsProps> = ({
   onNavigate,
   className,
 }) => {
-  const { breadcrumbs, isLoading } = useFolderBreadcrumbs({ folderId })
+  const { breadcrumbs, isLoading, isError, error } = useFolderBreadcrumbs({ folderId })
 
   if (isLoading) {
     return (
@@ -28,6 +28,28 @@ export const FolderBreadcrumbs: React.FC<FolderBreadcrumbsProps> = ({
     )
   }
 
+  // Handle errors gracefully - show home button only
+  if (isError) {
+    return (
+      <nav className={`flex items-center space-x-1 text-sm ${className}`}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onNavigate?.()}
+          className="h-auto p-1 text-gray-600 hover:text-gray-900"
+          aria-label="Home"
+        >
+          <Home className="w-4 h-4" />
+        </Button>
+        <ChevronRight className="w-4 h-4 text-gray-400" />
+        <div className="flex items-center gap-1 text-gray-500">
+          <AlertCircle className="w-4 h-4" />
+          <span className="text-xs">Unable to load path</span>
+        </div>
+      </nav>
+    )
+  }
+
   return (
     <nav className={`flex items-center space-x-1 text-sm ${className}`}>
       <Button
@@ -35,6 +57,7 @@ export const FolderBreadcrumbs: React.FC<FolderBreadcrumbsProps> = ({
         size="sm"
         onClick={() => onNavigate?.()}
         className="h-auto p-1 text-gray-600 hover:text-gray-900"
+        aria-label="Home"
       >
         <Home className="w-4 h-4" />
       </Button>

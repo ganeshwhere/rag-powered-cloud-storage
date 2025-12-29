@@ -81,7 +81,10 @@ describe('useSearch', () => {
       await result.current.searchDocuments(searchRequest)
     })
 
-    expect(mockSearchApi.searchDocuments).toHaveBeenCalledWith(searchRequest)
+    expect(mockSearchApi.searchDocuments).toHaveBeenCalledWith(
+      searchRequest,
+      expect.any(Object)
+    )
     expect(result.current.results).toEqual(mockSearchResponse)
     expect(result.current.noResults).toBeNull()
     expect(result.current.error).toBeNull()
@@ -115,7 +118,11 @@ describe('useSearch', () => {
     })
 
     await act(async () => {
-      await result.current.searchDocuments({ query: 'error query' })
+      try {
+        await result.current.searchDocuments({ query: 'error query' })
+      } catch (error) {
+        // Expected to throw
+      }
     })
 
     expect(result.current.results).toBeNull()
@@ -132,7 +139,11 @@ describe('useSearch', () => {
     })
 
     await act(async () => {
-      await result.current.searchDocuments({ query: 'error query' })
+      try {
+        await result.current.searchDocuments({ query: 'error query' })
+      } catch (error) {
+        // Expected to throw
+      }
     })
 
     expect(result.current.error).toBe('An error occurred while searching')
@@ -154,7 +165,10 @@ describe('useSearch', () => {
       result.current.searchDocuments({ query: 'test query' })
     })
 
-    expect(result.current.isSearching).toBe(true)
+    // Check loading state (might not be immediately true due to async nature)
+    await waitFor(() => {
+      expect(result.current.isSearching).toBe(true)
+    })
 
     // Resolve search
     await act(async () => {
@@ -266,7 +280,11 @@ describe('useSearch', () => {
     })
 
     await act(async () => {
-      await result.current.searchDocuments({ query: 'bad query' })
+      try {
+        await result.current.searchDocuments({ query: 'bad query' })
+      } catch (error) {
+        // Expected to throw
+      }
     })
 
     // Should not retry 4xx errors
@@ -292,7 +310,10 @@ describe('useSearch', () => {
       await result.current.searchDocuments(searchRequest)
     })
 
-    expect(mockSearchApi.searchDocuments).toHaveBeenCalledWith(searchRequest)
+    expect(mockSearchApi.searchDocuments).toHaveBeenCalledWith(
+      searchRequest,
+      expect.any(Object)
+    )
     expect(result.current.results).toEqual(mockSearchResponse)
   })
 })

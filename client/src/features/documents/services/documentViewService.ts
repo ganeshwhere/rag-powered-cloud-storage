@@ -26,13 +26,25 @@ export class DocumentViewService {
       return this.documentCache.get(documentId)!
     }
 
-    // Fetch from API
-    const document = await documentApi.getDocument(documentId)
-    
-    // Cache the result
-    this.documentCache.set(documentId, document)
-    
-    return document
+    try {
+      // Fetch from API
+      const document = await documentApi.getDocument(documentId)
+      
+      // Cache the result
+      this.documentCache.set(documentId, document)
+      
+      return document
+    } catch (error: any) {
+      // If document not found (404), clear it from cache and throw a user-friendly error
+      if (error.message?.includes('not found') || 
+          error.message?.includes('404') || 
+          error.status === 404) {
+        this.clearDocumentCache(documentId)
+        throw new Error('Document not found or has been deleted')
+      }
+      // Re-throw other errors
+      throw error
+    }
   }
 
   /**
@@ -47,17 +59,29 @@ export class DocumentViewService {
       return cached.url
     }
 
-    // Fetch new download URL
-    const downloadData = await documentApi.getDownloadUrl(documentId)
-    
-    // Cache with expiration (subtract 5 minutes for safety)
-    const expiresAt = now + (downloadData.expires_in * 1000) - (5 * 60 * 1000)
-    this.downloadUrlCache.set(documentId, {
-      url: downloadData.download_url,
-      expires: expiresAt
-    })
-    
-    return downloadData.download_url
+    try {
+      // Fetch new download URL
+      const downloadData = await documentApi.getDownloadUrl(documentId)
+      
+      // Cache with expiration (subtract 5 minutes for safety)
+      const expiresAt = now + (downloadData.expires_in * 1000) - (5 * 60 * 1000)
+      this.downloadUrlCache.set(documentId, {
+        url: downloadData.download_url,
+        expires: expiresAt
+      })
+      
+      return downloadData.download_url
+    } catch (error: any) {
+      // If document not found (404), clear it from cache and throw a user-friendly error
+      if (error.message?.includes('not found') || 
+          error.message?.includes('404') || 
+          error.status === 404) {
+        this.clearDocumentCache(documentId)
+        throw new Error('Document not found or has been deleted')
+      }
+      // Re-throw other errors
+      throw error
+    }
   }
 
   /**

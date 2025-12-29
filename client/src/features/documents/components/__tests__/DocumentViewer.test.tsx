@@ -4,20 +4,20 @@ import { DocumentViewer } from '../DocumentViewer'
 import type { Document } from '@/shared/types/document'
 
 // Mock the hooks
-jest.mock('../hooks/useDocument', () => ({
+jest.mock('../../hooks/useDocument', () => ({
   useDocument: jest.fn(),
 }))
-const mockUseDocument = require('../hooks/useDocument').useDocument as jest.Mock
+const mockUseDocument = require('../../hooks/useDocument').useDocument as jest.Mock
 
-jest.mock('../hooks/useDocumentStatus', () => ({
+jest.mock('../../hooks/useDocumentStatus', () => ({
   useDocumentStatus: jest.fn(),
 }))
-const mockUseDocumentStatus = require('../hooks/useDocumentStatus').useDocumentStatus as jest.Mock
+const mockUseDocumentStatus = require('../../hooks/useDocumentStatus').useDocumentStatus as jest.Mock
 
-jest.mock('../hooks/useDocumentActions', () => ({
+jest.mock('../../hooks/useDocumentActions', () => ({
   useDocumentActions: jest.fn(),
 }))
-const mockUseDocumentActions = require('../hooks/useDocumentActions').useDocumentActions as jest.Mock
+const mockUseDocumentActions = require('../../hooks/useDocumentActions').useDocumentActions as jest.Mock
 
 // Mock window.confirm
 const mockConfirm = jest.fn()
@@ -93,7 +93,7 @@ describe('DocumentViewer', () => {
 
     render(<DocumentViewer documentId="doc-1" />)
 
-    expect(screen.getByText('Test Document.pdf')).not.toBeInTheDocument()
+    expect(screen.queryByText('Test Document.pdf')).not.toBeInTheDocument()
     // Check for loading skeleton
     expect(document.querySelector('.animate-pulse')).toBeInTheDocument()
   })
@@ -285,5 +285,41 @@ describe('DocumentViewer', () => {
     render(<DocumentViewer documentId="doc-1" />)
 
     expect(screen.getByText('5 MB')).toBeInTheDocument()
+  })
+
+  it('auto-closes when document not found (404 error)', async () => {
+    const mockOnClose = jest.fn()
+    const notFoundError = new Error('Document not found')
+    
+    mockUseDocument.mockReturnValue({
+      data: null,
+      isLoading: false,
+      error: notFoundError,
+    })
+
+    render(<DocumentViewer documentId="doc-1" onClose={mockOnClose} />)
+
+    // Should auto-close when 404 error occurs
+    await waitFor(() => {
+      expect(mockOnClose).toHaveBeenCalled()
+    })
+  })
+
+  it('auto-closes when document returns 404 status error', async () => {
+    const mockOnClose = jest.fn()
+    const error404 = new Error('Request failed with status 404')
+    
+    mockUseDocument.mockReturnValue({
+      data: null,
+      isLoading: false,
+      error: error404,
+    })
+
+    render(<DocumentViewer documentId="doc-1" onClose={mockOnClose} />)
+
+    // Should auto-close when 404 error occurs
+    await waitFor(() => {
+      expect(mockOnClose).toHaveBeenCalled()
+    })
   })
 })

@@ -4,16 +4,16 @@ import { FolderDialog } from '../FolderDialog'
 import type { Folder } from '@/shared/types/folder'
 
 // Mock the hooks
-jest.mock('../hooks/useFolderActions', () => ({
+jest.mock('../../hooks/useFolderActions', () => ({
   useFolderActions: jest.fn(),
 }))
-const mockUseFolderActions = require('../hooks/useFolderActions').useFolderActions as jest.Mock
+const mockUseFolderActions = require('../../hooks/useFolderActions').useFolderActions as jest.Mock
 
 // Mock validation function
-jest.mock('../types', () => ({
+jest.mock('../../types', () => ({
   validateFolderName: jest.fn(),
 }))
-const mockValidateFolderName = require('../types').validateFolderName as jest.Mock
+const mockValidateFolderName = require('../../types').validateFolderName as jest.Mock
 
 describe('FolderDialog', () => {
   const mockFolder: Folder = {

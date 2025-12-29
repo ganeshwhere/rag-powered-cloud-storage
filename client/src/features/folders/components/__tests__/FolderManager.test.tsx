@@ -34,7 +34,7 @@ jest.mock('../FolderDialog', () => ({
   ),
 }))
 
-jest.mock('../../documents/components/DocumentList', () => ({
+jest.mock('../../../documents/components/DocumentList', () => ({
   DocumentList: ({ folderId, onDocumentSelect, onUploadClick }: any) => (
     <div data-testid="document-list">
       <span>Documents for folder: {folderId || 'all'}</span>
@@ -46,7 +46,7 @@ jest.mock('../../documents/components/DocumentList', () => ({
   ),
 }))
 
-jest.mock('../../documents/components/upload/UploadManager', () => ({
+jest.mock('../../../documents/components/upload/UploadManager', () => ({
   UploadManager: ({ folderId, onUploadComplete }: any) => (
     <div data-testid="upload-manager">
       <span>Upload to folder: {folderId || 'root'}</span>

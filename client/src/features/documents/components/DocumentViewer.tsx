@@ -40,6 +40,13 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
   const { data: status } = useDocumentStatus({ documentId, enabled: !!document })
   const { deleteDocument, getDownloadUrl } = useDocumentActions()
 
+  // Auto-close viewer if document is not found (404 error)
+  React.useEffect(() => {
+    if (error && (error.message?.includes('not found') || error.message?.includes('404'))) {
+      onClose?.()
+    }
+  }, [error, onClose])
+
   const handleDownload = async () => {
     try {
       await getDownloadUrl.mutateAsync(documentId)
