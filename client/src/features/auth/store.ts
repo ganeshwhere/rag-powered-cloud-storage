@@ -12,6 +12,9 @@ interface AuthStore extends AuthState {
   checkAuth: () => Promise<void>
   clearError: () => void
   setLoading: (loading: boolean) => void
+  // Add initialization state
+  isInitialized: boolean
+  setInitialized: (initialized: boolean) => void
 }
 
 export const useAuthStore = create<AuthStore>()(
@@ -20,8 +23,9 @@ export const useAuthStore = create<AuthStore>()(
       // Initial state
       user: null,
       isAuthenticated: false,
-      isLoading: false,
+      isLoading: true, // Start with loading true to prevent premature redirects
       error: null,
+      isInitialized: false,
 
       // Actions
       login: async (credentials: LoginRequest) => {
@@ -41,6 +45,7 @@ export const useAuthStore = create<AuthStore>()(
             isAuthenticated: true,
             isLoading: false,
             error: null,
+            isInitialized: true,
           })
         } catch (error) {
           set({
@@ -48,6 +53,7 @@ export const useAuthStore = create<AuthStore>()(
             isAuthenticated: false,
             isLoading: false,
             error: error instanceof Error ? error.message : 'Login failed',
+            isInitialized: true,
           })
           throw error
         }
@@ -70,6 +76,7 @@ export const useAuthStore = create<AuthStore>()(
             isAuthenticated: true,
             isLoading: false,
             error: null,
+            isInitialized: true,
           })
         } catch (error) {
           set({
@@ -77,6 +84,7 @@ export const useAuthStore = create<AuthStore>()(
             isAuthenticated: false,
             isLoading: false,
             error: error instanceof Error ? error.message : 'Registration failed',
+            isInitialized: true,
           })
           throw error
         }
@@ -93,6 +101,7 @@ export const useAuthStore = create<AuthStore>()(
             isAuthenticated: false,
             isLoading: false,
             error: null,
+            isInitialized: true,
           })
         } catch (error) {
           // Even if logout fails, clear local state
@@ -101,13 +110,15 @@ export const useAuthStore = create<AuthStore>()(
             isAuthenticated: false,
             isLoading: false,
             error: null,
+            isInitialized: true,
           })
         }
       },
 
       checkAuth: async () => {
-        // Don't check auth if already loading
-        if (get().isLoading) return
+        // Don't check auth if already loading or if we're already initialized and authenticated
+        const currentState = get()
+        if (currentState.isLoading && currentState.isInitialized) return
         
         const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null
         
@@ -117,6 +128,7 @@ export const useAuthStore = create<AuthStore>()(
             isAuthenticated: false,
             isLoading: false,
             error: null,
+            isInitialized: true,
           })
           return
         }
@@ -131,6 +143,7 @@ export const useAuthStore = create<AuthStore>()(
             isAuthenticated: true,
             isLoading: false,
             error: null,
+            isInitialized: true,
           })
         } catch (error) {
           // Token is invalid, clear everything
@@ -144,6 +157,7 @@ export const useAuthStore = create<AuthStore>()(
             isAuthenticated: false,
             isLoading: false,
             error: null,
+            isInitialized: true,
           })
         }
       },
@@ -155,6 +169,10 @@ export const useAuthStore = create<AuthStore>()(
       setLoading: (loading: boolean) => {
         set({ isLoading: loading })
       },
+
+      setInitialized: (initialized: boolean) => {
+        set({ isInitialized: initialized })
+      },
     }),
     {
       name: 'auth-store',
@@ -163,6 +181,21 @@ export const useAuthStore = create<AuthStore>()(
         user: state.user,
         isAuthenticated: state.isAuthenticated,
       }),
+      // Add onRehydrateStorage to handle initialization after persistence restore
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          // After rehydration, check if we have a token and validate it
+          const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null
+          if (token && state.isAuthenticated) {
+            // We have a token and were previously authenticated, validate it
+            state.checkAuth()
+          } else {
+            // No token or not previously authenticated, mark as initialized
+            state.setInitialized(true)
+            state.setLoading(false)
+          }
+        }
+      },
     }
   )
 )

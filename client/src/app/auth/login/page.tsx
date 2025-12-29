@@ -3,37 +3,25 @@
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { LoginForm } from '@/features/auth/components/LoginForm'
-import { useAuth } from '@/features/auth/hooks/useAuth'
-import { useGuestGuard } from '@/features/auth/hooks/useAuthGuard'
+import { useAuth } from '@/features/auth/context'
 import type { LoginFormData } from '@/features/auth/types'
 
 export default function LoginPage() {
   const router = useRouter()
-  const { login, isLoading, error } = useAuth()
-  
-  // Redirect authenticated users away from login page
-  const { isAuthenticated, isLoading: authLoading } = useGuestGuard('/')
+  const { login, isLoading, error, isAuthenticated } = useAuth()
 
   const handleLogin = async (data: LoginFormData) => {
     try {
-      await login(data)
-      router.push('/')
+      await login(data.email, data.password)
+      // Navigation is handled by the AuthProvider
     } catch (err) {
-      // Error is handled by the store and displayed in the form
+      // Error is handled by the context and displayed in the form
     }
   }
 
-  // Show loading while checking auth status
-  if (authLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    )
-  }
-
-  // Don't render if already authenticated (will be redirected)
+  // Redirect if already authenticated
   if (isAuthenticated) {
+    router.push('/documents')
     return null
   }
 

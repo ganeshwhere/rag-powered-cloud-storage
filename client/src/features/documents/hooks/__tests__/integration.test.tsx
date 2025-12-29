@@ -101,9 +101,9 @@ describe('Document Hooks Integration', () => {
       expect(uploadedDocumentId).toBe('doc123')
 
       // Now test status tracking for the uploaded document
-      const { result: statusResult } = renderHook(() => useDocumentStatus({
-        documentId: uploadedDocumentId!
-      }), { wrapper })
+      const { result: statusResult } = renderHook(() => useDocumentStatus(
+        uploadedDocumentId!
+      ), { wrapper })
 
       // Wait for status to load
       await waitFor(() => {

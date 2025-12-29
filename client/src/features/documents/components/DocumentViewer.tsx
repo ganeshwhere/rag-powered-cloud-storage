@@ -37,7 +37,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
   className,
 }) => {
   const { data: document, isLoading, error } = useDocument({ documentId })
-  const { data: status } = useDocumentStatus({ documentId, enabled: !!document })
+  const { data: status } = useDocumentStatus(documentId, { enabled: !!document })
   const { deleteDocument, getDownloadUrl } = useDocumentActions()
 
   // Auto-close viewer if document is not found (404 error)

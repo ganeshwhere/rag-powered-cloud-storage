@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuthStore } from '@/features/auth/store'
+import { useAuth } from '@/features/auth/context'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
@@ -13,16 +13,11 @@ export function ProtectedRoute({
   children, 
   redirectTo = '/auth/login' 
 }: ProtectedRouteProps) {
-  const { isAuthenticated, isLoading, checkAuth } = useAuthStore()
+  const { isAuthenticated, isLoading } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
-    // Check authentication status on mount
-    checkAuth()
-  }, [checkAuth])
-
-  useEffect(() => {
-    // Redirect to login if not authenticated and not loading
+    // Only redirect when loading is complete and user is not authenticated
     if (!isLoading && !isAuthenticated) {
       router.push(redirectTo)
     }

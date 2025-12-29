@@ -12,7 +12,7 @@ import {
   Input
 } from "@/shared/components/ui";
 import { Upload, Search, FolderOpen, LogIn, UserPlus } from "lucide-react";
-import { useAuth } from '@/features/auth/hooks/useAuth'
+import { useAuth } from '@/features/auth/context'
 import { SearchInterface } from '@/features/search/components/SearchInterface'
 
 export default function Home() {

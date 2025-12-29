@@ -48,7 +48,7 @@ export const createMockQueryClient = () => {
 }
 
 // Mock API responses helper
-export const mockApiResponse = <T>(data: T, delay = 0) => {
+export const mockApiResponse = <T,>(data: T, delay = 0) => {
   return new Promise<T>((resolve) => {
     setTimeout(() => resolve(data), delay)
   })

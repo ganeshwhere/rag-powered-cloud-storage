@@ -9,6 +9,7 @@ export function useAuth() {
     isAuthenticated,
     isLoading,
     error,
+    isInitialized,
     login,
     register,
     logout,
@@ -22,6 +23,7 @@ export function useAuth() {
     isAuthenticated,
     isLoading,
     error,
+    isInitialized,
     
     // Actions
     login,
