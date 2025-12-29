@@ -29,6 +29,9 @@ from app.features.documents.schemas import (
 
 logger = logging.getLogger(__name__)
 
+# NOTE: This router defines its own prefix since main.py includes it without a prefix
+# main.py: app.include_router(documents_router, tags=["documents"])
+# This creates the final URL: /api/v1/documents/
 router = APIRouter(prefix="/api/v1/documents", tags=["documents"])
 
 

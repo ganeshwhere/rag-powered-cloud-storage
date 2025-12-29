@@ -85,7 +85,11 @@ from app.features.documents.router import router as documents_router
 from app.features.folders.router import router as folders_router
 from app.features.search.router import router as search_router
 
+# Router configuration - be careful with prefixes to avoid double prefixes
+# Pattern 1: Prefix in main.py (recommended)
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["authentication"])
-app.include_router(documents_router, tags=["documents"])
 app.include_router(folders_router, prefix="/api/v1/folders", tags=["folders"])
 app.include_router(search_router, prefix="/api/v1/search", tags=["search"])
+
+# Pattern 2: Prefix in router file (documents router uses this pattern)
+app.include_router(documents_router, tags=["documents"])

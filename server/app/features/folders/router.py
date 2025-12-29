@@ -26,6 +26,9 @@ from app.features.folders.schemas import (
 )
 
 
+# IMPORTANT: Do not add prefix here to avoid double prefixes
+# The prefix is added in main.py: app.include_router(folders_router, prefix="/api/v1/folders")
+# This creates the final URL: /api/v1/folders/
 router = APIRouter()
 
 

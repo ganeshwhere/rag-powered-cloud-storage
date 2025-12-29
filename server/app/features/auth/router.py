@@ -23,6 +23,9 @@ from app.features.auth.schemas import (
 from app.core.models.user import User
 
 
+# IMPORTANT: Do not add prefix here to avoid double prefixes
+# The prefix is added in main.py: app.include_router(auth_router, prefix="/api/v1/auth")
+# This creates the final URL: /api/v1/auth/
 router = APIRouter()
 
 

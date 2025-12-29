@@ -20,7 +20,10 @@ from app.features.search.schemas import (
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/search", tags=["search"])
+# IMPORTANT: Do not add prefix here to avoid double prefixes
+# The prefix is added in main.py: app.include_router(search_router, prefix="/api/v1/search")
+# This creates the final URL: /api/v1/search/
+router = APIRouter(tags=["search"])
 
 
 @router.post("/", response_model=Union[SearchResponse, NoResultsResponse])

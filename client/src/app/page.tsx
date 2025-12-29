@@ -13,6 +13,7 @@ import {
 } from "@/shared/components/ui";
 import { Upload, Search, FolderOpen, LogIn, UserPlus } from "lucide-react";
 import { useAuth } from '@/features/auth/hooks/useAuth'
+import { SearchInterface } from '@/features/search/components/SearchInterface'
 
 export default function Home() {
   const { isAuthenticated, user, logout } = useAuth()
@@ -65,24 +66,11 @@ export default function Home() {
         </div>
 
         {/* Search Bar */}
-        <div className="mb-8">
-          <div className="flex gap-2 max-w-2xl mx-auto">
-            <Input 
-              placeholder="Search your documents..." 
-              className="flex-1"
-              disabled={!isAuthenticated}
-            />
-            <Button disabled={!isAuthenticated}>
-              <Search className="w-4 h-4" />
-              Search
-            </Button>
+        {isAuthenticated && (
+          <div className="mb-8">
+            <SearchInterface className="max-w-2xl mx-auto" />
           </div>
-          {!isAuthenticated && (
-            <p className="text-sm text-gray-500 text-center mt-2">
-              Please sign in to search your documents
-            </p>
-          )}
-        </div>
+        )}
 
         {/* Main Feature Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -121,13 +109,24 @@ export default function Home() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button 
-                variant="outline" 
-                className="w-full"
-                disabled={!isAuthenticated}
-              >
-                Search
-              </Button>
+              {isAuthenticated ? (
+                <Link href="/search">
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                  >
+                    Search
+                  </Button>
+                </Link>
+              ) : (
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  disabled
+                >
+                  Search
+                </Button>
+              )}
             </CardContent>
           </Card>
 
