@@ -9,6 +9,7 @@ export type {
   DocumentListResponse,
   DocumentStatusResponse,
 } from '@/shared/types/document'
+import { APP_CONFIG } from '@/shared/lib/config'
 
 // Upload-specific types for the upload components
 export interface UploadFile {
@@ -41,7 +42,7 @@ export interface UploadProgress {
 
 // Default upload configuration
 export const DEFAULT_UPLOAD_CONFIG: UploadConfig = {
-  maxFileSize: 100 * 1024 * 1024, // 100MB
+  maxFileSize: APP_CONFIG.maxFileSizeMB * 1024 * 1024, // Convert MB to bytes
   allowedFileTypes: [
     'application/pdf',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',

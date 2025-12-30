@@ -3,6 +3,7 @@
 import React from 'react'
 import { UploadManager } from './UploadManager'
 import { UploadFile } from '../../types'
+import { APP_CONFIG } from '@/shared/lib/config'
 
 export function UploadDemo() {
   const handleUploadComplete = (documentId: string, file: File) => {
@@ -26,7 +27,7 @@ export function UploadDemo() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Document Upload</h1>
         <p className="text-gray-600">
-          Upload your documents to get started with AI-powered search and analysis.
+          Upload your documents to get started with {APP_CONFIG.tagline}.
         </p>
       </div>
 

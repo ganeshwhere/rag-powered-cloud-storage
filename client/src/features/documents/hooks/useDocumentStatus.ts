@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { documentApi } from '../api'
+import { APP_CONFIG } from '@/shared/lib/config'
 
 export const useDocumentStatus = (
   documentId: string | null | undefined,
@@ -14,7 +15,7 @@ export const useDocumentStatus = (
     refetchInterval: (query) => {
       // Auto-refresh if document is still processing
       if (query.state.data?.status === 'processing' || query.state.data?.status === 'pending') {
-        return refetchInterval || 3000 // 3 seconds
+        return refetchInterval || APP_CONFIG.documentStatusPollInterval
       }
       return false
     },

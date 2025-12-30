@@ -2,6 +2,7 @@
 
 import { SearchInterface } from '@/features/search/components/SearchInterface'
 import { ProtectedRoute } from '@/shared/components/ProtectedRoute'
+import { APP_CONFIG } from '@/shared/lib/config'
 
 export default function SearchPage() {
   return (
@@ -10,7 +11,7 @@ export default function SearchPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Search Documents</h1>
           <p className="text-muted-foreground">
-            Ask questions about your documents and get AI-powered answers with source references.
+            Ask questions about your documents and get {APP_CONFIG.tagline}.
           </p>
         </div>
         

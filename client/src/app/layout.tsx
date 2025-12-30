@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: APP_CONFIG.name,
-  description: "AI-powered document management and search system",
+  description: APP_CONFIG.description,
 };
 
 export default function RootLayout({
