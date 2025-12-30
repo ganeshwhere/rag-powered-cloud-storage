@@ -1,8 +1,9 @@
 import axios, { AxiosError, AxiosResponse } from 'axios'
+import { APP_CONFIG } from './config'
 
 // Create axios instance with base configuration
 export const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1',
+  baseURL: APP_CONFIG.apiUrl || 'http://localhost:8000/api/v1',
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
@@ -43,7 +44,7 @@ api.interceptors.response.use(
         const refreshToken = localStorage.getItem('refresh_token')
         if (refreshToken) {
           const response = await axios.post(
-            `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'}/auth/refresh`,
+            `${APP_CONFIG.apiUrl || 'http://localhost:8000/api/v1'}/auth/refresh`,
             { refresh_token: refreshToken }
           )
 

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/shared/lib/providers";
+import { APP_CONFIG } from "@/shared/lib/config";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "RAG Powered Cloud Storage",
+  title: APP_CONFIG.name,
   description: "AI-powered document management and search system",
 };
 

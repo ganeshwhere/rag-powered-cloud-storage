@@ -14,6 +14,7 @@ import {
 import { Upload, Search, FolderOpen, LogIn, UserPlus } from "lucide-react";
 import { useAuth } from '@/features/auth/context'
 import { SearchInterface } from '@/features/search/components/SearchInterface'
+import { APP_CONFIG } from "@/shared/lib/config";
 
 export default function Home() {
   const { isAuthenticated, user, logout } = useAuth()
@@ -59,7 +60,7 @@ export default function Home() {
         </div>
 
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-4">RAG Document System</h1>
+          <h1 className="text-4xl font-bold mb-4">{APP_CONFIG.name}</h1>
           <p className="text-lg text-muted-foreground">
             AI-powered document management and intelligent search
           </p>
