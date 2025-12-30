@@ -1,4 +1,19 @@
 import '@testing-library/jest-dom'
+import 'whatwg-fetch'
+
+// Polyfills for MSW
+import { TextEncoder, TextDecoder } from 'util'
+
+global.TextEncoder = TextEncoder
+global.TextDecoder = TextDecoder as any
+
+// Mock BroadcastChannel for MSW
+global.BroadcastChannel = jest.fn().mockImplementation(() => ({
+  postMessage: jest.fn(),
+  close: jest.fn(),
+  addEventListener: jest.fn(),
+  removeEventListener: jest.fn(),
+}))
 
 // Mock Next.js router
 jest.mock('next/navigation', () => ({

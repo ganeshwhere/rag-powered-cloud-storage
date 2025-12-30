@@ -1,2 +1,5 @@
 export * from "./ui"
 export { MainLayout } from "./layout/main-layout"
+export { ErrorBoundary, withErrorBoundary, useErrorHandler } from "./ErrorBoundary"
+export * from "./error-fallbacks"
+export * from "./loading"

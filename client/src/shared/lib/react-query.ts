@@ -1,33 +1,92 @@
 import { QueryClient, DefaultOptions } from '@tanstack/react-query'
 
-// Default query options
+// Performance-optimized query options
 const queryConfig: DefaultOptions = {
   queries: {
-    // Stale time: 5 minutes
+    // Stale time: 5 minutes for most queries
     staleTime: 1000 * 60 * 5,
-    // Cache time: 10 minutes
-    gcTime: 1000 * 60 * 10,
-    // Retry failed requests 3 times
-    retry: 3,
-    // Retry delay with exponential backoff
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-    // Refetch on window focus
+    // Cache time: 30 minutes (increased for better performance)
+    gcTime: 1000 * 60 * 30,
+    // Retry failed requests 3 times with exponential backoff
+    retry: (failureCount, error: any) => {
+      // Don't retry on 4xx errors (client errors)
+      if (error?.response?.status >= 400 && error?.response?.status < 500) {
+        return false;
+      }
+      return failureCount < 3;
+    },
+    // Retry delay with exponential backoff and jitter
+    retryDelay: (attemptIndex) => {
+      const baseDelay = Math.min(1000 * 2 ** attemptIndex, 30000);
+      // Add jitter to prevent thundering herd
+      return baseDelay + Math.random() * 1000;
+    },
+    // Disable refetch on window focus for better performance
     refetchOnWindowFocus: false,
     // Refetch on reconnect
     refetchOnReconnect: true,
+    // Refetch on mount only if data is stale
+    refetchOnMount: true,
+    // Network mode for better offline handling
+    networkMode: 'online',
   },
   mutations: {
     // Retry failed mutations once
-    retry: 1,
+    retry: (failureCount, error: any) => {
+      // Don't retry on 4xx errors
+      if (error?.response?.status >= 400 && error?.response?.status < 500) {
+        return false;
+      }
+      return failureCount < 1;
+    },
     // Retry delay for mutations
     retryDelay: 1000,
+    // Network mode for mutations
+    networkMode: 'online',
   },
 }
 
-// Create query client instance
+// Create query client instance with performance optimizations
 export const queryClient = new QueryClient({
   defaultOptions: queryConfig,
+  // Enable query deduplication
+  queryCache: undefined, // Use default cache
+  mutationCache: undefined, // Use default cache
 })
+
+// Performance-specific query configurations
+export const queryConfigs = {
+  // Fast queries (user interactions)
+  fast: {
+    staleTime: 1000 * 30, // 30 seconds
+    gcTime: 1000 * 60 * 5, // 5 minutes
+  },
+  
+  // Medium queries (document lists)
+  medium: {
+    staleTime: 1000 * 60 * 2, // 2 minutes
+    gcTime: 1000 * 60 * 15, // 15 minutes
+  },
+  
+  // Slow queries (search results, heavy computations)
+  slow: {
+    staleTime: 1000 * 60 * 10, // 10 minutes
+    gcTime: 1000 * 60 * 60, // 1 hour
+  },
+  
+  // Static data (rarely changes)
+  static: {
+    staleTime: 1000 * 60 * 60, // 1 hour
+    gcTime: 1000 * 60 * 60 * 24, // 24 hours
+  },
+  
+  // Real-time data (frequently updated)
+  realtime: {
+    staleTime: 0, // Always stale
+    gcTime: 1000 * 60, // 1 minute
+    refetchInterval: 1000 * 30, // 30 seconds
+  },
+} as const;
 
 // Query keys factory for consistent key management
 export const queryKeys = {
@@ -93,3 +152,39 @@ export const mutationKeys = {
     query: ['search', 'query'] as const,
   },
 } as const
+
+// Cache invalidation utilities
+export const cacheUtils = {
+  // Invalidate all document-related queries
+  invalidateDocuments: () => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.documents.all });
+  },
+  
+  // Invalidate all folder-related queries
+  invalidateFolders: () => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.folders.all });
+  },
+  
+  // Invalidate search queries
+  invalidateSearch: () => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.search.all });
+  },
+  
+  // Clear all caches (use sparingly)
+  clearAll: () => {
+    queryClient.clear();
+  },
+  
+  // Prefetch common queries
+  prefetchDocuments: (folderId?: string) => {
+    queryClient.prefetchQuery({
+      queryKey: queryKeys.documents.list(folderId),
+      staleTime: queryConfigs.medium.staleTime,
+    });
+  },
+  
+  // Remove specific query from cache
+  removeQuery: (queryKey: readonly unknown[]) => {
+    queryClient.removeQueries({ queryKey });
+  },
+};

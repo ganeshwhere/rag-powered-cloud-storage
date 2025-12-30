@@ -1,5 +1,6 @@
 import axios, { AxiosError, AxiosResponse } from 'axios'
 import { APP_CONFIG } from './config'
+import { ErrorHandler } from '../utils/error-handling'
 
 // Create axios instance with base configuration
 export const api = axios.create({
@@ -68,6 +69,9 @@ api.interceptors.response.use(
       }
     }
 
+    // Use our error handler for consistent error handling
+    ErrorHandler.handle(error, 'API Request');
+
     return Promise.reject(error)
   }
 )
@@ -85,8 +89,10 @@ export interface ApiError {
   errors?: Record<string, string[]>
 }
 
-// Helper function to handle API errors
+// Helper function to handle API errors (deprecated - use ErrorHandler instead)
 export const handleApiError = (error: AxiosError<ApiError>): string => {
+  console.warn('handleApiError is deprecated. Use ErrorHandler.handle() instead.');
+  
   if (error.response?.data?.message) {
     return error.response.data.message
   }
