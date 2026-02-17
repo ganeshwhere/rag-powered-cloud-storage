@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { LockKeyhole, Sparkles } from 'lucide-react'
 import { LoginForm } from '@/features/auth/components/LoginForm'
@@ -19,10 +20,13 @@ export default function LoginPage() {
     }
   }
 
-  if (isAuthenticated) {
-    router.push('/documents')
-    return null
-  }
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.replace('/documents')
+    }
+  }, [isAuthenticated, router])
+
+  if (isAuthenticated) return null
 
   const appName = APP_CONFIG.name ?? 'Document RAG'
   const appTagline = APP_CONFIG.tagline ?? 'Ask better questions across every document.'

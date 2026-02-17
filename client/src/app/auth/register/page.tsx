@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ShieldCheck, Sparkles } from 'lucide-react'
 import { RegisterForm } from '@/features/auth/components/RegisterForm'
@@ -19,10 +20,13 @@ export default function RegisterPage() {
     }
   }
 
-  if (isAuthenticated) {
-    router.push('/documents')
-    return null
-  }
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.replace('/documents')
+    }
+  }, [isAuthenticated, router])
+
+  if (isAuthenticated) return null
 
   const appName = APP_CONFIG.name ?? 'Document RAG'
 

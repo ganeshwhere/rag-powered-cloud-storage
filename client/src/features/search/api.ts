@@ -3,6 +3,7 @@
  */
 
 import { api } from '@/shared/lib/api'
+import axios from 'axios'
 import { 
   SearchRequest, 
   SearchResponse, 
@@ -49,10 +50,30 @@ export const searchApi = {
    * Get search suggestions based on partial query
    */
   getSearchSuggestions: async (query: string): Promise<SearchSuggestionsResponse> => {
-    const response = await api.get('/search/suggestions', {
-      params: { query }
-    })
-    return response.data
+    const normalizedQuery = query.trim()
+
+    if (!normalizedQuery || normalizedQuery.length > 100) {
+      return {
+        query: normalizedQuery,
+        suggestions: [],
+      }
+    }
+
+    try {
+      const response = await api.get('/search/suggestions', {
+        params: { query: normalizedQuery },
+      })
+      return response.data
+    } catch (error) {
+      // Treat validation edge cases as "no suggestions" to avoid noisy UX.
+      if (axios.isAxiosError(error) && error.response?.status === 422) {
+        return {
+          query: normalizedQuery,
+          suggestions: [],
+        }
+      }
+      throw error
+    }
   },
 
   /**
