@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { Lock, Mail, User, UserRound } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
@@ -56,7 +57,7 @@ export function RegisterForm({ onSubmit, isLoading = false, error }: RegisterFor
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!validateForm()) {
       return
     }
@@ -69,138 +70,138 @@ export function RegisterForm({ onSubmit, isLoading = false, error }: RegisterFor
     }
   }
 
-  const handleInputChange = (field: keyof RegisterFormData) => (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setFormData(prev => ({
+  const handleInputChange = (field: keyof RegisterFormData) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData((prev) => ({
       ...prev,
-      [field]: e.target.value
+      [field]: e.target.value,
     }))
-    
-    // Clear field error when user starts typing
+
     if (errors[field]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        [field]: undefined
+        [field]: undefined,
       }))
     }
   }
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle>Create Account</CardTitle>
-        <CardDescription>
-          Sign up to start managing your documents
-        </CardDescription>
+    <Card className="surface-border w-full max-w-md border-white/70 bg-white/88 py-5 backdrop-blur-xl">
+      <CardHeader className="gap-2">
+        <CardTitle className="font-display text-2xl">Create Account</CardTitle>
+        <CardDescription>Sign up to start managing your documents</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium">
+            <label htmlFor="email" className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
               Email
             </label>
-            <Input
-              id="email"
-              type="email"
-              value={formData.email}
-              onChange={handleInputChange('email')}
-              placeholder="Enter your email"
-              disabled={isLoading}
-              aria-invalid={!!errors.email}
-            />
-            {errors.email && (
-              <p className="text-sm text-destructive">{errors.email}</p>
-            )}
+            <div className="relative">
+              <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={handleInputChange('email')}
+                placeholder="Enter your email"
+                disabled={isLoading}
+                aria-invalid={!!errors.email}
+                className="h-10 rounded-xl border-white/65 bg-white/82 pl-10"
+              />
+            </div>
+            {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="username" className="text-sm font-medium">
+            <label htmlFor="username" className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
               Username
             </label>
-            <Input
-              id="username"
-              type="text"
-              value={formData.username}
-              onChange={handleInputChange('username')}
-              placeholder="Choose a username"
-              disabled={isLoading}
-              aria-invalid={!!errors.username}
-            />
-            {errors.username && (
-              <p className="text-sm text-destructive">{errors.username}</p>
-            )}
+            <div className="relative">
+              <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="username"
+                type="text"
+                value={formData.username}
+                onChange={handleInputChange('username')}
+                placeholder="Choose a username"
+                disabled={isLoading}
+                aria-invalid={!!errors.username}
+                className="h-10 rounded-xl border-white/65 bg-white/82 pl-10"
+              />
+            </div>
+            {errors.username && <p className="text-sm text-destructive">{errors.username}</p>}
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="full_name" className="text-sm font-medium">
+            <label htmlFor="full_name" className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
               Full Name (Optional)
             </label>
-            <Input
-              id="full_name"
-              type="text"
-              value={formData.full_name}
-              onChange={handleInputChange('full_name')}
-              placeholder="Enter your full name"
-              disabled={isLoading}
-            />
+            <div className="relative">
+              <UserRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="full_name"
+                type="text"
+                value={formData.full_name}
+                onChange={handleInputChange('full_name')}
+                placeholder="Enter your full name"
+                disabled={isLoading}
+                className="h-10 rounded-xl border-white/65 bg-white/82 pl-10"
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="password" className="text-sm font-medium">
+            <label htmlFor="password" className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
               Password
             </label>
-            <Input
-              id="password"
-              type="password"
-              value={formData.password}
-              onChange={handleInputChange('password')}
-              placeholder="Create a password"
-              disabled={isLoading}
-              aria-invalid={!!errors.password}
-            />
-            {errors.password && (
-              <p className="text-sm text-destructive">{errors.password}</p>
-            )}
+            <div className="relative">
+              <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="password"
+                type="password"
+                value={formData.password}
+                onChange={handleInputChange('password')}
+                placeholder="Create a password"
+                disabled={isLoading}
+                aria-invalid={!!errors.password}
+                className="h-10 rounded-xl border-white/65 bg-white/82 pl-10"
+              />
+            </div>
+            {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="confirmPassword" className="text-sm font-medium">
+            <label
+              htmlFor="confirmPassword"
+              className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground"
+            >
               Confirm Password
             </label>
-            <Input
-              id="confirmPassword"
-              type="password"
-              value={formData.confirmPassword}
-              onChange={handleInputChange('confirmPassword')}
-              placeholder="Confirm your password"
-              disabled={isLoading}
-              aria-invalid={!!errors.confirmPassword}
-            />
-            {errors.confirmPassword && (
-              <p className="text-sm text-destructive">{errors.confirmPassword}</p>
-            )}
+            <div className="relative">
+              <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={formData.confirmPassword}
+                onChange={handleInputChange('confirmPassword')}
+                placeholder="Confirm your password"
+                disabled={isLoading}
+                aria-invalid={!!errors.confirmPassword}
+                className="h-10 rounded-xl border-white/65 bg-white/82 pl-10"
+              />
+            </div>
+            {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword}</p>}
           </div>
 
-          {error && (
-            <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md">
-              {error}
-            </div>
-          )}
+          {error && <div className="rounded-xl bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
 
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={isLoading}
-          >
+          <Button type="submit" className="h-10 w-full rounded-xl" disabled={isLoading}>
             {isLoading ? 'Creating account...' : 'Create Account'}
           </Button>
-          <p className="text-sm text-gray-600 text-center">
+
+          <p className="text-center text-sm text-muted-foreground">
             Already have an account?{' '}
-            <Link 
-              href="/auth/login" 
-              className="text-primary hover:text-primary/80 font-medium"
-            >
+            <Link href="/auth/login" className="font-semibold text-primary transition-colors hover:text-primary/80">
               Sign in
             </Link>
           </p>

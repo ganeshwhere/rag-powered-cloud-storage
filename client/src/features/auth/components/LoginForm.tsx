@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { Lock, Mail } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
@@ -39,7 +40,7 @@ export function LoginForm({ onSubmit, isLoading = false, error }: LoginFormProps
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!validateForm()) {
       return
     }
@@ -51,88 +52,77 @@ export function LoginForm({ onSubmit, isLoading = false, error }: LoginFormProps
     }
   }
 
-  const handleInputChange = (field: keyof LoginFormData) => (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setFormData(prev => ({
+  const handleInputChange = (field: keyof LoginFormData) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData((prev) => ({
       ...prev,
-      [field]: e.target.value
+      [field]: e.target.value,
     }))
-    
-    // Clear field error when user starts typing
+
     if (errors[field]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        [field]: undefined
+        [field]: undefined,
       }))
     }
   }
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle>Sign In</CardTitle>
-        <CardDescription>
-          Enter your credentials to access your account
-        </CardDescription>
+    <Card className="surface-border w-full max-w-md border-white/70 bg-white/88 py-5 backdrop-blur-xl">
+      <CardHeader className="gap-2">
+        <CardTitle className="font-display text-2xl">Sign In</CardTitle>
+        <CardDescription>Enter your credentials to access your account</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium">
+            <label htmlFor="email" className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
               Email
             </label>
-            <Input
-              id="email"
-              type="email"
-              value={formData.email}
-              onChange={handleInputChange('email')}
-              placeholder="Enter your email"
-              disabled={isLoading}
-              aria-invalid={!!errors.email}
-            />
-            {errors.email && (
-              <p className="text-sm text-destructive">{errors.email}</p>
-            )}
+            <div className="relative">
+              <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={handleInputChange('email')}
+                placeholder="Enter your email"
+                disabled={isLoading}
+                aria-invalid={!!errors.email}
+                className="h-10 rounded-xl border-white/65 bg-white/82 pl-10"
+              />
+            </div>
+            {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="password" className="text-sm font-medium">
+            <label htmlFor="password" className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
               Password
             </label>
-            <Input
-              id="password"
-              type="password"
-              value={formData.password}
-              onChange={handleInputChange('password')}
-              placeholder="Enter your password"
-              disabled={isLoading}
-              aria-invalid={!!errors.password}
-            />
-            {errors.password && (
-              <p className="text-sm text-destructive">{errors.password}</p>
-            )}
+            <div className="relative">
+              <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="password"
+                type="password"
+                value={formData.password}
+                onChange={handleInputChange('password')}
+                placeholder="Enter your password"
+                disabled={isLoading}
+                aria-invalid={!!errors.password}
+                className="h-10 rounded-xl border-white/65 bg-white/82 pl-10"
+              />
+            </div>
+            {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
           </div>
 
-          {error && (
-            <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md">
-              {error}
-            </div>
-          )}
+          {error && <div className="rounded-xl bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
 
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={isLoading}
-          >
+          <Button type="submit" className="h-10 w-full rounded-xl" disabled={isLoading}>
             {isLoading ? 'Signing in...' : 'Sign In'}
           </Button>
-          <p className="text-sm text-gray-600 text-center">
-            Don't have an account?{' '}
-            <Link 
-              href="/auth/register" 
-              className="text-primary hover:text-primary/80 font-medium"
-            >
+
+          <p className="text-center text-sm text-muted-foreground">
+            Don&apos;t have an account?{' '}
+            <Link href="/auth/register" className="font-semibold text-primary transition-colors hover:text-primary/80">
               Sign up
             </Link>
           </p>

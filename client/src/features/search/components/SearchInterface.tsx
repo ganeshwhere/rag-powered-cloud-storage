@@ -107,11 +107,11 @@ export function SearchInterface({ className, filters }: SearchInterfaceProps) {
   const showDropdown = (showHistory && history.length > 0) || (showSuggestions && suggestions.length > 0)
 
   return (
-    <div className={className}>
+    <div className={`space-y-4 ${className ?? ''}`}>
       {/* Search Input */}
       <div className="relative">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="text"
             placeholder="Search your documents..."
@@ -120,10 +120,10 @@ export function SearchInterface({ className, filters }: SearchInterfaceProps) {
             onKeyPress={handleKeyPress}
             onFocus={handleInputFocus}
             onBlur={handleInputBlur}
-            className="pl-10 pr-24"
+            className="h-11 rounded-2xl border-white/70 bg-white/90 pl-11 pr-30 shadow-sm"
             disabled={isSearching}
           />
-          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
+          <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1.5">
             {query && (
               <Button
                 variant="ghost"
@@ -134,7 +134,7 @@ export function SearchInterface({ className, filters }: SearchInterfaceProps) {
                   setShowHistory(false)
                   setShowSuggestions(false)
                 }}
-                className="h-6 w-6"
+                className="h-7 w-7 rounded-full text-muted-foreground hover:text-foreground"
               >
                 ×
               </Button>
@@ -143,6 +143,7 @@ export function SearchInterface({ className, filters }: SearchInterfaceProps) {
               onClick={() => handleSearch()}
               disabled={!query.trim() || isSearching}
               size="sm"
+              className="h-8 rounded-xl px-3.5"
             >
               {isSearching ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -155,7 +156,7 @@ export function SearchInterface({ className, filters }: SearchInterfaceProps) {
 
         {/* Search Dropdown */}
         {showDropdown && (
-          <Card className="absolute top-full left-0 right-0 z-50 mt-1 max-h-80 overflow-y-auto">
+          <Card className="surface-border absolute left-0 right-0 top-full z-50 mt-2 max-h-80 overflow-y-auto border-white/75 bg-white/95 py-2 shadow-xl">
             {showHistory && history.length > 0 && (
               <div className="p-2">
                 <div className="flex items-center gap-2 px-2 py-1 text-sm font-medium text-muted-foreground">
@@ -189,14 +190,14 @@ export function SearchInterface({ className, filters }: SearchInterfaceProps) {
 
       {/* Error Display */}
       {error && (
-        <Card className="mt-4 p-4 border-destructive bg-destructive/5">
+        <Card className="border-destructive bg-destructive/5 p-4">
           <p className="text-sm text-destructive">{error}</p>
         </Card>
       )}
 
       {/* Search Results */}
       {hasResults && (
-        <div className="mt-6">
+        <div className="pt-2">
           <SearchResults
             results={results}
             noResults={noResults}
@@ -207,8 +208,8 @@ export function SearchInterface({ className, filters }: SearchInterfaceProps) {
 
       {/* Search History (when not searching) */}
       {!hasResults && !isSearching && history.length > 0 && (
-        <div className="mt-6">
-          <h3 className="text-lg font-semibold mb-4">Recent Searches</h3>
+        <div className="pt-2">
+          <h3 className="mb-4 font-display text-xl font-semibold">Recent Searches</h3>
           <SearchHistory
             history={history}
             onItemClick={handleHistoryItemClick}

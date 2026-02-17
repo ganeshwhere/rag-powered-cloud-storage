@@ -155,7 +155,7 @@ export const LazyUploadManager = withLazyLoading(LazyUploadManagerComponent, Doc
 // Route-level lazy loading
 export const LazyDocumentsPage = lazy(() => import('@/app/documents/page'));
 export const LazySearchPage = lazy(() => import('@/app/search/page'));
-export const LazyUploadPage = lazy(() => import('@/app/upload-test/page'));
+export const LazyUploadPage = lazy(() => import('@/app/upload/page'));
 
 // Preload utilities for better UX
 export const preloadComponent = (importFn: () => Promise<any>) => {
