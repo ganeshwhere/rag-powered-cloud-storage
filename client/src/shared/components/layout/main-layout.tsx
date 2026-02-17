@@ -38,7 +38,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         <div className="app-page-width flex items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
           <Link
             href="/"
-            className="group rounded-full pr-3 focus:outline-none focus:ring-2 focus:ring-ring"
+            className="group rounded-full pr-3 focus:outline-none"
           >
             <span className="font-display text-base font-semibold tracking-tight text-foreground sm:text-lg">
               {appName}
